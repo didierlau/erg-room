@@ -17,7 +17,11 @@ const KEYS = {
   draft: 'live',
 };
 
-export const DEFAULT_SETTINGS = Object.freeze({ ftp: 200, smooth: 3 });
+/**
+ * ftp watts · smooth display smoothing in seconds · lthr/maxHr bpm or null ·
+ * ftpHistory [{date, ftp, method}] each time an FTP result was applied
+ */
+export const DEFAULT_SETTINGS = Object.freeze({ ftp: 200, smooth: 3, lthr: null, maxHr: null, ftpHistory: [] });
 
 /** @param {ReturnType<import('../core/storage.js').createStorage>} storage */
 export function createRepository(storage) {
@@ -25,7 +29,7 @@ export function createRepository(storage) {
 
   return {
     loadSettings() {
-      return { ...DEFAULT_SETTINGS, ...storage.get(KEYS.settings, {}) };
+      return structuredClone({ ...DEFAULT_SETTINGS, ...storage.get(KEYS.settings, {}) });
     },
     saveSettings(settings) {
       return storage.set(KEYS.settings, settings);

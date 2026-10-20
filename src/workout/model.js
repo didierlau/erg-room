@@ -14,13 +14,16 @@
  *
  *   segment { d, p1, p2, free?, bi, rep?, reps?, on? }
  *
- * @typedef {{t:'steady', d:number, p:number}} SteadyBlock
+ * @typedef {{t:'steady', d:number, p:number, tag?:SegmentTag, label?:string}} SteadyBlock
  * @typedef {{t:'ramp', d:number, p1:number, p2:number}} RampBlock
  * @typedef {{t:'intervals', n:number, on:number, onP:number, off:number, offP:number}} IntervalsBlock
- * @typedef {{t:'free', d:number}} FreeBlock
+ * @typedef {{t:'free', d:number, tag?:SegmentTag, label?:string}} FreeBlock
  * @typedef {SteadyBlock | RampBlock | IntervalsBlock | FreeBlock} Block
  * @typedef {{id:string, name:string, description?:string, example?:boolean, blocks:Block[]}} Workout
- * @typedef {{d:number, p1?:number, p2?:number, free?:boolean, bi:number, rep?:number, reps?:number, on?:boolean}} Segment
+ * @typedef {'ramp-step' | 'effort' | 'stage'} SegmentTag
+ *   Marks FTP-test segments: ramp-test steps, rider-paced efforts (ERG target
+ *   adjustable in watts) and submaximal heart-rate stages.
+ * @typedef {{d:number, p1?:number, p2?:number, free?:boolean, bi:number, rep?:number, reps?:number, on?:boolean, tag?:SegmentTag, label?:string}} Segment
  */
 import { createId } from '../core/format.js';
 
@@ -39,19 +42,26 @@ export function zoneOf(fraction) {
   return i === -1 ? 6 : i + 1;
 }
 
+/** Copy FTP-test markers from a block onto its segment. */
+function withTag(segment, block) {
+  if (block.tag) segment.tag = block.tag;
+  if (block.label) segment.label = block.label;
+  return segment;
+}
+
 /** @returns {Segment[]} */
 export function flatten(blocks) {
   const out = [];
   blocks.forEach((b, bi) => {
     switch (b.t) {
       case 'steady':
-        out.push({ d: b.d, p1: b.p, p2: b.p, bi });
+        out.push(withTag({ d: b.d, p1: b.p, p2: b.p, bi }, b));
         break;
       case 'ramp':
         out.push({ d: b.d, p1: b.p1, p2: b.p2, bi });
         break;
       case 'free':
-        out.push({ d: b.d, free: true, bi });
+        out.push(withTag({ d: b.d, free: true, bi }, b));
         break;
       case 'intervals':
         for (let i = 0; i < b.n; i++) {

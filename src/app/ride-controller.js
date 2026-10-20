@@ -5,6 +5,7 @@
 import { RideSession } from '../ride/engine.js';
 import { DemoRider } from '../ride/demo-rider.js';
 import { rideStats } from '../ride/stats.js';
+import { RampFailureDetector } from '../ftp/ramp-failure.js';
 import { createWakeLock, toast } from '../ui/dom.js';
 
 /** Frame loop interval (ms). */
@@ -13,6 +14,10 @@ const FRAME_MS = 250;
 const DRAFT_INTERVAL_MS = 10_000;
 /** Rides with fewer samples than this are not worth keeping. */
 const MIN_SAMPLES_TO_SAVE = 5;
+/** Ramp-test failure is only detected from this step on (the first steps are easy). */
+const RAMP_DETECT_FROM_STEP = 4;
+/** The demo rider "fails" a ramp test at this multiple of FTP. */
+const DEMO_RAMP_LIMIT = 1.3;
 
 /**
  * @param {{
@@ -29,6 +34,7 @@ export function createRideController({ trainer, live, repository, rideView, getS
   let session = null;
   let timer = null;
   let demo = null;
+  let rampDetector = null;
   let lastFrame = 0;
   let lastDraft = 0;
 
@@ -41,14 +47,24 @@ export function createRideController({ trainer, live, repository, rideView, getS
     const wall = Date.now();
     if (demo) {
       const position = session.position();
-      const simulated = demo.step((now - lastFrame) / 1000, { paused: session.paused, target: session.targetWatts(position), grade: session.grade });
+      const simulated = demo.step((now - lastFrame) / 1000, { paused: session.paused, target: session.targetWatts(position), grade: session.grade, limit: session.ftp * DEMO_RAMP_LIMIT });
       live.updateTrainer(simulated, now);
     }
     lastFrame = now;
 
     const reading = live.read(now);
     session.update({ now, wall, reading });
-    if (session.takeCompletedEvent()) toast('Workout complete. Keep spinning or tap Finish.', 3500);
+    if (rampDetector) {
+      const pos = session.position();
+      const active = pos?.segment.tag === 'ramp-step' && pos.index >= RAMP_DETECT_FROM_STEP && !session.paused;
+      if (rampDetector.update({ now, reading, target: session.targetWatts(pos), active })) {
+        session.endWorkout();
+        session.takeCompletedEvent();
+        rampDetector = null;
+        toast('Ramp test complete. Spin easy, then tap Finish to see your FTP.', 5000);
+      }
+    }
+    if (session.takeCompletedEvent()) toast(session.test ? 'Test complete. Spin easy, then tap Finish to see your result.' : 'Workout complete. Keep spinning or tap Finish.', 4000);
 
     const command = session.nextCommand(now);
     if (command && !session.demo) trainer.send(command);
@@ -63,6 +79,7 @@ export function createRideController({ trainer, live, repository, rideView, getS
   function start(workout, { demo: isDemo }) {
     session = new RideSession({ workout, ftp: getSettings().ftp, demo: isDemo, startedAt: Date.now() });
     demo = isDemo ? new DemoRider() : null;
+    rampDetector = session.test?.protocol === 'ramp' ? new RampFailureDetector() : null;
     lastFrame = performance.now();
     lastDraft = Date.now();
     rideView.start(session);
@@ -83,11 +100,13 @@ export function createRideController({ trainer, live, repository, rideView, getS
     demo = null;
     rideView.stop();
 
-    if (!save || wasDemo || record.samples.p.length < MIN_SAMPLES_TO_SAVE) {
-      repository.clearDraft();
-      if (save && !wasDemo) toast('Ride too short to save');
+    repository.clearDraft();
+    if (!save || record.samples.p.length < MIN_SAMPLES_TO_SAVE) {
+      if (save) toast('Ride too short to save');
       return null;
     }
+    // Demo rides are shown in the summary (so a demo test shows its result) but never stored.
+    if (wasDemo) return { ...record, stats: rideStats(record), demo: true };
     return saveRecord(record);
   }
 
@@ -109,7 +128,8 @@ export function createRideController({ trainer, live, repository, rideView, getS
     nudge(direction) {
       if (!session) return;
       const result = session.nudge(direction);
-      toast(result.kind === 'grade' ? `Gradient ${result.value}%` : `Intensity ${Math.round(result.value * 100)}%`);
+      const messages = { grade: `Gradient ${result.value}%`, effort: `Target ${result.value} W`, intensity: `Intensity ${Math.round(result.value * 100)}%` };
+      toast(messages[result.kind]);
       rideView.invalidateChart();
       frame();
     },

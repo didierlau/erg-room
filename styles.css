@@ -160,3 +160,18 @@ table.hist{width:100%;border-collapse:collapse;font-size:14px}
 .note{font-size:12px;color:var(--muted);align-self:center}
 /* On phones the device bar wraps to two rows, so it scrolls away instead of sticking. */
 @media (max-width:700px){ .top{position:static} .bpreview{top:8px} }
+
+/* FTP test result */
+.result{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:12px;margin-bottom:12px}
+.result .headline{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.result .headline b{font-family:var(--display);font-size:clamp(48px,14vw,84px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.result .headline b small{font-size:.35em;color:var(--muted);margin-left:4px}
+.result .headline span{color:var(--muted)}
+.result .change{font-weight:600}
+.result .change.up{color:var(--ok)} .result .change.down{color:var(--warn)}
+.result dl{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:0;font-variant-numeric:tabular-nums}
+.result dt{color:var(--muted)} .result dd{margin:0;font-weight:600}
+.result ul{margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px}
+.result .row{display:flex;gap:8px;flex-wrap:wrap}
+.result.error .headline b{font-size:24px}
+.card.test .meta .tag{border-color:color-mix(in srgb,var(--z2) 50%,var(--line))}

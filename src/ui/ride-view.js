@@ -16,7 +16,7 @@ const CHART_REDRAW_MS = 900;
 export function createRideView(actions) {
   const root = $('#view-ride');
   const el = Object.fromEntries(['name', 'demo', 'elapsed', 'left', 'power', 'dev', 'tgauge', 'tlabel', 'target', 'tpct', 'clock', 'what', 'next',
-    'cad', 'hr', 'int', 'kj', 'canvas', 'state', 'pause'].map((id) => [id, $(`#r-${id}`)]));
+    'cad', 'hr', 'int', 'kj', 'canvas', 'state', 'pause', 'plus', 'minus'].map((id) => [id, $(`#r-${id}`)]));
   let session = null;
   let lastChart = 0;
 
@@ -45,8 +45,10 @@ export function createRideView(actions) {
   });
 
   function describeStep(position) {
-    if (!position) return 'Cool down as you like';
+    if (!position) return session.test ? 'Test done · spin easy' : 'Cool down as you like';
     const s = position.segment;
+    if (s.tag === 'ramp-step') return `Ramp · ${s.label}`;
+    if (s.label) return s.label;
     if (s.free) return 'Free ride';
     if (s.reps) return `${s.on ? 'Interval' : 'Recovery'} ${s.rep} of ${s.reps}`;
     if (s.p1 !== s.p2) return s.p2 > s.p1 ? 'Ramp up' : 'Ramp down';
@@ -58,6 +60,8 @@ export function createRideView(actions) {
     const next = session.segments[position.index + 1];
     if (!next) return 'Next: finish';
     const pct = (f) => Math.round(f * session.intensity * 100);
+    if (next.tag === 'ramp-step') return `Next: ${Math.round(next.p1 * session.ftp * session.intensity)} W. Hold it as long as you can`;
+    if (next.tag === 'effort') return `Next: ${next.label}, as hard as you can sustain`;
     if (next.free) return `Next: ${formatDuration(next.d)} free ride`;
     if (next.p1 !== next.p2) return `Next: ${formatDuration(next.d)} ramp ${pct(next.p1)}→${pct(next.p2)}%`;
     return `Next: ${formatDuration(next.d)} at ${Math.round(next.p1 * session.ftp * session.intensity)} W`;
@@ -86,7 +90,10 @@ export function createRideView(actions) {
       el.tgauge.style.setProperty('--zc', 'var(--line)');
       el.tpct.textContent = s.done ? 'All intervals complete' : 'ERG off. Click changes gradient.';
     }
-    el.dev.textContent = power != null && target ? `${power - target >= 0 ? '+' : ''}${power - target} W vs target` : reading.fresh ? ' ' : 'No data from trainer';
+    const effort = position?.segment.tag === 'effort';
+    const stepAvg = effort ? s.stepAverage(position.index) : null;
+    if (effort) el.dev.textContent = `Effort average ${stepAvg == null ? '—' : Math.round(stepAvg)} W`;
+    else el.dev.textContent = power != null && target ? `${power - target >= 0 ? '+' : ''}${power - target} W vs target` : reading.fresh ? ' ' : 'No data from trainer';
 
     el.clock.textContent = position ? formatDuration(Math.ceil(position.left)) : '0:00';
     el.what.textContent = describeStep(position);
@@ -96,8 +103,15 @@ export function createRideView(actions) {
     el.int.textContent = `${Math.round(s.intensity * 100)}%`;
     el.kj.textContent = `${Math.round(s.work / 1000)} kJ`;
     el.elapsed.textContent = formatDuration(s.elapsedSeconds());
-    el.left.textContent = formatDuration(s.total - s.workoutTime);
+    el.left.textContent = s.test?.protocol === 'ramp' && !s.done ? 'Until you stop' : formatDuration(s.done ? 0 : s.total - s.workoutTime);
     el.pause.textContent = s.paused ? 'Resume' : 'Pause';
+    // The +/− buttons change what the current step allows: intensity, effort watts or gradient.
+    const step = effort ? '5 W' : !position || position.segment.free ? '1%' : '5%';
+    if (el.plus.dataset.step !== step) {
+      el.plus.dataset.step = step;
+      el.plus.innerHTML = `<span class="k">+${step}</span>`;
+      el.minus.innerHTML = `<span class="k">−${step}</span>`;
+    }
 
     let message = '';
     if (s.paused) message = 'Paused';
@@ -118,7 +132,8 @@ export function createRideView(actions) {
       session = rideSession;
       lastChart = 0;
       el.name.textContent = session.name;
-      el.demo.hidden = !session.demo;
+      el.demo.hidden = !session.demo && !session.test;
+      el.demo.textContent = session.demo && session.test ? 'Demo test' : session.demo ? 'Demo' : 'Test';
     },
     stop() { session = null; },
     render,

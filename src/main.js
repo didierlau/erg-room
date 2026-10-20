@@ -19,8 +19,14 @@ import { createBuilderView } from './ui/builder-view.js';
 import { createRideView } from './ui/ride-view.js';
 import { createSummaryView } from './ui/summary-view.js';
 import { createRideController } from './app/ride-controller.js';
+import { buildTestWorkout, protocolById } from './ftp/protocols.js';
+import { analyzeTest, estimateFromHistory } from './ftp/analysis.js';
+import { renderFtpResult } from './ui/ftp-result.js';
 
 const FTP_RANGE = [50, 600];
+const HR_RANGE = { lthr: [100, 220], maxHr: [120, 230] };
+/** Garmin Connect's manual upload page (there is no public upload API for personal apps). */
+const GARMIN_IMPORT_URL = 'https://connect.garmin.com/modern/import-data';
 
 const repository = createRepository(createStorage(globalThis.localStorage));
 const state = {
@@ -52,6 +58,49 @@ function saveWorkouts() {
 function downloadFit(ride) {
   const name = `${localIsoDate(new Date(ride.start))} ${safeFileName(ride.name, 'Ride')}.fit`;
   downloadBlob(new Blob([buildActivityFit(ride)], { type: 'application/vnd.ant.fit' }), name);
+}
+
+/** Save the .FIT, then open Garmin Connect's import page to pick it. */
+function uploadToGarmin(ride) {
+  downloadFit(ride);
+  window.open(GARMIN_IMPORT_URL, '_blank', 'noopener');
+  toast('The .FIT is saved. On the Garmin page, choose it from your downloads.', 4500);
+}
+
+/** Apply an FTP result to settings and remember where it came from. */
+function applyFtpResult(patch, result) {
+  Object.assign(state.settings, patch);
+  state.settings.ftpHistory = [...state.settings.ftpHistory, { date: Date.now(), ftp: patch.ftp, method: result.protocol }];
+  repository.saveSettings(state.settings);
+  toast(`FTP set to ${patch.ftp} W`);
+}
+
+const resultOptions = (canApply, extra = {}) => ({
+  currentFtp: state.settings.ftp, maxHr: state.settings.maxHr, canApply, onApply: applyFtpResult, ...extra,
+});
+
+function startTest(protocolId) {
+  const protocol = protocolById(protocolId);
+  const begin = () => startRide(buildTestWorkout(protocolId));
+  if (!protocol.needsHeartRate) return begin();
+  if (!state.settings.lthr && !state.settings.maxHr) {
+    showDialog({
+      title: 'Threshold or max heart rate needed',
+      text: 'The heart-rate check estimates FTP from where your heart rate reaches threshold. Enter your threshold or max heart rate in Settings first.',
+      actions: [{ label: 'OK', style: 'primary', onClick: () => $('#set-lthr').focus() }],
+    });
+    return undefined;
+  }
+  if (heartRate.connected) return begin();
+  showDialog({
+    title: 'Connect a heart-rate strap',
+    text: 'This test needs heart rate. Connect your strap now, or start anyway if your trainer passes heart rate on.',
+    actions: [
+      { label: 'Start anyway', style: 'ghost', onClick: begin },
+      { label: 'Connect strap', style: 'primary', onClick: async () => { try { if (await heartRate.connect()) begin(); } catch (error) { toast(`Heart rate: ${error.message}`); } } },
+    ],
+  });
+  return undefined;
 }
 
 async function importFiles(files) {
@@ -105,12 +154,24 @@ const library = createLibraryView({
   onDeleteWorkout: (w) => { state.workouts = state.workouts.filter((x) => x !== w); saveWorkouts(); renderLibrary(); },
   onImportFiles: importFiles,
   onDownloadFit: downloadFit,
+  onUploadGarmin: uploadToGarmin,
+  onOpenRide: (ride) => { summary.show(ride); show('summary'); },
+  onStartTest: startTest,
+  onEstimateFromRides: () => library.showHistoryResult((container) => renderFtpResult(container, estimateFromHistory(repository.loadRides()),
+    resultOptions(true, { onDismiss: library.hideHistoryResult, onApply: (patch, result) => { applyFtpResult(patch, result); renderLibrary(); } }))),
   onDeleteRide: (ride) => { repository.deleteRide(ride.id); renderLibrary(); },
   onSettingsChange: (patch) => {
     if ('ftp' in patch && !(patch.ftp >= FTP_RANGE[0] && patch.ftp <= FTP_RANGE[1])) {
       toast(`Enter an FTP between ${FTP_RANGE[0]} and ${FTP_RANGE[1]} W`);
       renderLibrary();
       return;
+    }
+    for (const [key, [min, max]] of Object.entries(HR_RANGE)) {
+      if (patch[key] != null && !(patch[key] >= min && patch[key] <= max)) {
+        toast(`Enter a heart rate between ${min} and ${max} bpm, or leave it empty`);
+        renderLibrary();
+        return;
+      }
     }
     Object.assign(state.settings, patch);
     repository.saveSettings(state.settings);
@@ -132,7 +193,12 @@ const builder = createBuilderView({
   },
 });
 
-const summary = createSummaryView({ onDownloadFit: downloadFit, onBack: () => show('library') });
+const summary = createSummaryView({
+  onDownloadFit: downloadFit,
+  onUploadGarmin: uploadToGarmin,
+  onBack: () => show('library'),
+  renderTestResult: (container, ride) => renderFtpResult(container, analyzeTest(ride, state.settings), resultOptions(!ride.demo)),
+});
 
 const rideView = createRideView({
   onNudge: (dir) => rides.nudge(dir),

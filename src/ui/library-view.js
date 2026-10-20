@@ -6,11 +6,14 @@ import { $, showDialog } from './dom.js';
 import { drawProfile } from './profile-chart.js';
 import { escapeHtml, formatDuration } from '../core/format.js';
 import { flatten, workoutStats } from '../workout/model.js';
+import { PROTOCOLS, buildTestWorkout } from '../ftp/protocols.js';
+import { methodName } from './ftp-result.js';
 
 /**
  * @param {{
  *   onRide:(w) => void, onEdit:(w) => void, onNew:() => void, onExportZwo:(w) => void, onDeleteWorkout:(w) => void,
- *   onImportFiles:(files:File[]) => void, onDownloadFit:(ride) => void, onDeleteRide:(ride) => void,
+ *   onImportFiles:(files:File[]) => void, onDownloadFit:(ride) => void, onUploadGarmin:(ride) => void, onDeleteRide:(ride) => void,
+ *   onOpenRide:(ride) => void, onStartTest:(protocolId:string) => void, onEstimateFromRides:() => void,
  *   onSettingsChange:(patch:object) => void,
  * }} actions
  */
@@ -20,6 +23,9 @@ export function createLibraryView(actions) {
   const rideList = $('#ride-list');
   const ftpInput = $('#set-ftp');
   const smoothSelect = $('#set-smooth');
+  const lthrInput = $('#set-lthr');
+  const maxHrInput = $('#set-maxhr');
+  const testList = $('#test-list');
   let lastState = null;
 
   $('#zwo-input').addEventListener('change', (e) => {
@@ -30,6 +36,9 @@ export function createLibraryView(actions) {
   $('#new-workout').addEventListener('click', () => actions.onNew());
   ftpInput.addEventListener('change', () => actions.onSettingsChange({ ftp: Math.round(Number(ftpInput.value)) }));
   smoothSelect.addEventListener('change', () => actions.onSettingsChange({ smooth: Number(smoothSelect.value) }));
+  const optionalNumber = (input) => (input.value.trim() === '' ? null : Math.round(Number(input.value)));
+  lthrInput.addEventListener('change', () => actions.onSettingsChange({ lthr: optionalNumber(lthrInput) }));
+  maxHrInput.addEventListener('change', () => actions.onSettingsChange({ maxHr: optionalNumber(maxHrInput) }));
 
   function workoutCard(workout, ftp) {
     const segments = flatten(workout.blocks);
@@ -60,6 +69,33 @@ export function createLibraryView(actions) {
     return { card, segments };
   }
 
+  function testCard(protocol, ftp) {
+    const segments = flatten(buildTestWorkout(protocol.id).blocks);
+    const duration = protocol.id === 'ramp' ? 'Usually 20–30 min' : formatDuration(workoutStats(segments, ftp).duration);
+    const card = document.createElement('div');
+    card.className = 'card test';
+    card.innerHTML = `
+      <div class="row"><h3>${escapeHtml(protocol.name)}</h3><span class="spacer"></span>${protocol.needsHeartRate ? '<span class="tag">Needs heart rate</span>' : ''}</div>
+      <canvas></canvas>
+      <div class="meta"><span><b>${duration}</b></span><span>${escapeHtml(protocol.measures)}</span></div>
+      <p class="desc">${escapeHtml(protocol.summary)}</p>
+      <div class="row"><button class="btn primary" data-action="start">Start test</button></div>`;
+    card.querySelector('[data-action=start]').addEventListener('click', () => actions.onStartTest(protocol.id));
+    return { card, segments };
+  }
+
+  function historyCard() {
+    const card = document.createElement('div');
+    card.className = 'card test';
+    card.innerHTML = `
+      <div class="row"><h3>From your rides</h3></div>
+      <div class="meta"><span><b>No riding needed</b></span><span>Critical Power from your power curve</span></div>
+      <p class="desc">Fits your best 3- to 20-minute efforts from the last 90 days. Only as good as the hardest efforts in those rides.</p>
+      <div class="row"><button class="btn" data-action="estimate">Estimate FTP</button></div>`;
+    card.querySelector('[data-action=estimate]').addEventListener('click', () => actions.onEstimateFromRides());
+    return card;
+  }
+
   function rideRow(ride) {
     const s = ride.stats;
     const date = new Date(ride.start);
@@ -68,8 +104,10 @@ export function createLibraryView(actions) {
       <td>${escapeHtml(ride.name)}</td>
       <td>${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</td>
       <td>${formatDuration(s.duration)}</td><td>${s.avgPower} W</td><td>${s.normalizedPower} W</td><td>${s.kj}</td><td>${s.avgHr ?? '—'}</td>
-      <td><button class="btn small" data-action="fit">.FIT</button> <button class="btn small ghost danger" data-action="delete">Delete</button></td>`;
+      <td><button class="btn small" data-action="garmin">Garmin</button> <button class="btn small" data-action="fit">.FIT</button>${ride.test ? ' <button class="btn small" data-action="open">Result</button>' : ''} <button class="btn small ghost danger" data-action="delete">Delete</button></td>`;
+    tr.querySelector('[data-action=garmin]').addEventListener('click', () => actions.onUploadGarmin(ride));
     tr.querySelector('[data-action=fit]').addEventListener('click', () => actions.onDownloadFit(ride));
+    tr.querySelector('[data-action=open]')?.addEventListener('click', () => actions.onOpenRide(ride));
     tr.querySelector('[data-action=delete]').addEventListener('click', () => showDialog({
       title: 'Delete ride?',
       text: 'The recording will be removed from this device. Download the .FIT first if you want to keep it.',
@@ -86,11 +124,19 @@ export function createLibraryView(actions) {
     if (!cards.length) workoutList.innerHTML = '<div class="empty card">No workouts yet. Import a .zwo file or build one.</div>';
     requestAnimationFrame(() => cards.forEach(({ card, segments }) => drawProfile(card.querySelector('canvas'), segments)));
 
+    const tests = PROTOCOLS.map((p) => testCard(p, state.settings.ftp));
+    testList.replaceChildren(...tests.map((t) => t.card), historyCard());
+    requestAnimationFrame(() => tests.forEach(({ card, segments }) => drawProfile(card.querySelector('canvas'), segments)));
+    const last = state.settings.ftpHistory?.at(-1);
+    $('#ftp-current').textContent = `Current FTP ${state.settings.ftp} W${last ? ` · set ${new Date(last.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} from ${methodName(last.method)}` : ''}`;
+
     rideList.replaceChildren(...state.rides.slice().reverse().map(rideRow));
     if (!state.rides.length) rideList.innerHTML = '<tr><td colspan="8" class="empty">No rides yet. Finished workouts appear here.</td></tr>';
 
     ftpInput.value = state.settings.ftp;
     smoothSelect.value = String(state.settings.smooth);
+    lthrInput.value = state.settings.lthr ?? '';
+    maxHrInput.value = state.settings.maxHr ?? '';
   }
 
   /** Light up the Click test keys in Settings. */
@@ -116,9 +162,19 @@ export function createLibraryView(actions) {
     $('#recover-discard').onclick = () => { banner.hidden = true; onDiscard(); };
   }
 
+  /** @param {(container:HTMLElement) => void} fill  renders a result into the history panel */
+  function showHistoryResult(fill) {
+    const panel = $('#history-result');
+    fill(panel);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  const hideHistoryResult = () => { $('#history-result').hidden = true; };
+
   return {
     root,
     render,
+    showHistoryResult,
+    hideHistoryResult,
     redraw: () => lastState && render(lastState),
     showButton,
     showBluetoothWarning,

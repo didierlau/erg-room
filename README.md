@@ -12,6 +12,27 @@ Structured ERG workouts for a **Zwift Hub** and **Zwift Click**, in the browser.
 - **Recording.** One sample per second, one lap per workout step. Download the `.FIT` (indoor cycling) and upload it to Strava, Garmin Connect, intervals.icu or TrainingPeaks.
 - **Safety nets.** The workout clock pauses when you stop pedalling, the screen stays awake, devices reconnect after a dropout, and an unfinished ride is saved every 10 seconds.
 - **Heart rate** from any Bluetooth strap (optional) and a **demo mode** to try it without a trainer.
+- **FTP tests** with automatic analysis and a one-tap “Set FTP”. Details below.
+- **Garmin upload helper.** Saves the `.FIT` and opens Garmin Connect’s import page.
+
+## FTP tests
+
+| Test | What you ride | How FTP is calculated |
+| --- | --- | --- |
+| **Ramp test** | 1-minute steps from 50% of FTP, +6% each minute, until your cadence collapses (detected automatically) | 75% of your best 1-minute power. Also records max heart rate. |
+| **20-minute test** | Warm-up with three openers, then 20 minutes as hard as you can sustain | 95% of 20-minute power (Allen & Coggan). Threshold heart rate = 95% of the effort’s average heart rate (Friel). Flags uneven pacing and heart-rate drift. |
+| **Critical Power 3/12** | A 3-minute and a 12-minute all-out effort, 30 minutes easy between | Two-parameter Critical Power model (work = CP·t + W′); FTP = 95% of CP. Also reports W′, your anaerobic capacity, and flags implausible values. |
+| **Heart-rate check** | Four 4-minute steady stages at 55–85% of FTP, nothing maximal | Fits heart rate against power over the settled end of each stage and finds the power at your threshold heart rate (or 90% of max HR). Least precise; meant for checking between real tests. |
+| **From your rides** | Nothing: uses rides from the last 90 days | Fits the Critical Power model to your best 3, 5, 8, 12 and 20-minute powers. Only valid if those rides contain hard efforts. |
+
+During test efforts the trainer stays in ERG and **+ / − change the target by 5 W**, so you pace the effort yourself. This also works with a single-cog setup like the Zwift Cog.
+
+## Garmin Connect, TrainingPeaks and Strava
+
+Garmin and TrainingPeaks only accept uploads from approved partner apps with a server, so Erg Room can’t upload in the background. The quickest route:
+
+1. Tap **Upload to Garmin** after a ride. The `.FIT` is saved and Garmin Connect’s *Import Data* page opens; choose the file there.
+2. Connect TrainingPeaks (Settings → Apps & Devices → Garmin) and Strava to your Garmin account once. Every ride you upload to Garmin then appears in both automatically.
 
 ## Requirements
 
@@ -62,6 +83,10 @@ src/
     ride-controller.js  frame loop: sensor data → ride engine → trainer and ride screen
   core/                 helpers with no browser dependencies (formatting, storage wrapper)
   data/repository.js    everything that is persisted, with a schema version for migrations
+  ftp/
+    protocols.js        FTP test workouts (tagged segments the analysis looks for)
+    analysis.js         FTP, CP/W′, LTHR and heart-rate estimates, with quality warnings
+    ramp-failure.js     detects the end of a ramp test
   workout/
     model.js            workout blocks, flattening into segments, zones, TSS/IF estimates
     zwo.js              Zwift .zwo import and export

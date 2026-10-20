@@ -42,16 +42,24 @@
   </section>
 
   <section>
-    <div class="section-head"><h2>Rides</h2><span class="foot">Download a ride as .FIT and upload it to Strava, Garmin Connect, intervals.icu or TrainingPeaks.</span></div>
+    <div class="section-head"><h2>FTP test</h2><span class="foot" id="ftp-current"></span></div>
+    <div class="grid" id="test-list"></div>
+    <div class="result" id="history-result" hidden style="margin-top:12px"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Rides</h2><span class="foot"><b>Garmin</b> saves the .FIT and opens Garmin Connect’s import page. With TrainingPeaks and Strava linked to Garmin Connect, rides reach them automatically.</span></div>
     <div class="scroll"><table class="hist"><thead><tr><th>Ride</th><th>Date</th><th>Time</th><th>Avg</th><th>NP</th><th>kJ</th><th>HR</th><th></th></tr></thead><tbody id="ride-list"></tbody></table></div>
   </section>
 
   <section>
     <div class="section-head"><h2>Settings</h2></div>
     <div class="settings">
-      <label class="field"><span class="label">FTP (watts)</span><input type="number" id="set-ftp" min="50" max="600" step="1" inputmode="numeric"><span class="hint">Workout targets are a percentage of this number.</span></label>
+      <label class="field"><span class="label">FTP (watts)</span><input type="number" id="set-ftp" min="50" max="600" step="1" inputmode="numeric"><span class="hint" id="ftp-hint">Workout targets are a percentage of this number.</span></label>
+      <label class="field"><span class="label">Threshold heart rate (bpm)</span><input type="number" id="set-lthr" min="100" max="220" step="1" inputmode="numeric" placeholder="Optional"><span class="hint">Measured by the 20-minute test. Used by the heart-rate check.</span></label>
+      <label class="field"><span class="label">Max heart rate (bpm)</span><input type="number" id="set-maxhr" min="120" max="230" step="1" inputmode="numeric" placeholder="Optional"><span class="hint">Highest you’ve seen, e.g. at the end of a ramp test.</span></label>
       <label class="field"><span class="label">Power display</span><select id="set-smooth"><option value="1">Instant (1 s)</option><option value="3">3 s average</option><option value="5">5 s average</option></select><span class="hint">Only changes what you see. The file always records every second.</span></label>
-      <div class="field"><span class="label">Click test</span><div class="clicktest"><div class="key" id="key-minus">−</div><div class="key" id="key-plus">+</div></div><span class="hint" id="click-hint">Connect your Click and press a button. During a workout, + and − change intensity by 5%.</span></div>
+      <div class="field"><span class="label">Click test</span><div class="clicktest"><div class="key" id="key-minus">−</div><div class="key" id="key-plus">+</div></div><span class="hint" id="click-hint">Connect your Click and press a button. During a workout, + and − change intensity by 5%, or the target by 5 W during an FTP test effort.</span></div>
     </div>
   </section>
   <p class="foot">Workouts, settings and rides are stored in this browser on this device. Erg Room controls the trainer with the standard Bluetooth FTMS protocol.</p>
@@ -81,7 +89,8 @@
 
 <main class="wrap" id="view-summary" hidden>
   <div class="section-head"><h2 id="s-title">Ride saved</h2>
-    <button class="btn primary" id="s-fit">Download .FIT</button><button class="btn" id="s-back">Back to workouts</button></div>
+    <button class="btn primary" id="s-garmin">Upload to Garmin</button><button class="btn" id="s-fit">Download .FIT</button><button class="btn ghost" id="s-back">Back to workouts</button></div>
+  <div class="result" id="s-result" hidden></div>
   <div class="sumchart"><canvas id="s-canvas"></canvas></div>
   <div class="sumgrid" id="s-stats" style="margin-top:12px"></div>
   <p class="foot" id="s-note"></p>

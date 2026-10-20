@@ -18,6 +18,8 @@ import { flatten, totalDuration, segmentAt, fractionAt } from '../workout/model.
 export const INTENSITY_STEP = 0.05;
 export const INTENSITY_RANGE = [0.5, 1.5];
 export const GRADE_RANGE = [-5, 15];
+/** Watts per +/− press during a rider-paced test effort. */
+export const EFFORT_STEP_W = 5;
 /** Minimum time between ERG updates while a ramp changes the target, in ms. */
 const RAMP_UPDATE_INTERVAL_MS = 950;
 /** A target change bigger than this (watts) is sent at once, even mid-ramp. */
@@ -29,14 +31,15 @@ const MAX_FRAME_S = 2;
 
 export class RideSession {
   /**
-   * @param {{workout:import('../workout/model.js').Workout, ftp:number, demo?:boolean, startedAt:number}} options
-   *   startedAt is a wall-clock time in ms (Date.now()).
+   * @param {{workout:import('../workout/model.js').Workout & {test?:{protocol:string}}, ftp:number, demo?:boolean, startedAt:number}} options
+   *   startedAt is a wall-clock time in ms (Date.now()). `workout.test` marks an FTP test.
    */
   constructor({ workout, ftp, demo = false, startedAt }) {
     this.id = createId();
     this.name = workout.name;
     this.ftp = ftp;
     this.demo = demo;
+    this.test = workout.test ?? null;
     this.start = startedAt;
     this.segments = flatten(workout.blocks);
     this.total = totalDuration(this.segments);
@@ -53,6 +56,9 @@ export class RideSession {
     this.trace = [];
     /** @type {Samples} */
     this.samples = { t: [], p: [], c: [], h: [], s: [], d: [], g: [] };
+    /** Watts added to each test effort's target by +/− presses, by segment index. */
+    this.effortOffsets = {};
+    this._stepPower = {};
 
     this._lastFrame = null;
     this._lastSecond = -1;
@@ -64,14 +70,29 @@ export class RideSession {
 
   /** Where the rider is in the workout, or null once it is complete. */
   position() {
-    return segmentAt(this.segments, this.workoutTime);
+    return this.done ? null : segmentAt(this.segments, this.workoutTime);
   }
 
   /** Current ERG target in watts (intensity applied); null in free ride or after the workout. */
   targetWatts(position = this.position()) {
     if (!position) return null;
     const f = fractionAt(position.segment, position.into);
-    return f == null ? null : Math.round(f * this.ftp * this.intensity);
+    if (f == null) return null;
+    if (position.segment.tag === 'effort') return Math.max(0, Math.round(f * this.ftp + (this.effortOffsets[position.index] ?? 0)));
+    return Math.round(f * this.ftp * this.intensity);
+  }
+
+  /** Average recorded power so far in workout step `index` (default: the current one). */
+  stepAverage(index = this.position()?.index) {
+    const acc = this._stepPower[index];
+    return acc?.n ? acc.sum / acc.n : null;
+  }
+
+  /** End the workout part now (e.g. the rider failed the ramp test). Recording continues until finish. */
+  endWorkout() {
+    if (this.done) return;
+    this.done = true;
+    this._completedEvent = true;
   }
 
   /** Seconds since the ride started, by wall clock. */
@@ -120,6 +141,11 @@ export class RideSession {
     S.s.push(Number(speed.toFixed(2)));
     S.d.push(Number(this.distance.toFixed(1)));
     S.g.push(pos ? pos.index : this.segments.length);
+    if (pos) {
+      const acc = (this._stepPower[pos.index] ??= { sum: 0, n: 0 });
+      acc.sum += power;
+      acc.n++;
+    }
     if (this.pedalling) this.trace[Math.floor(this.workoutTime)] = power;
   }
 
@@ -161,13 +187,18 @@ export class RideSession {
   }
 
   /**
-   * Handle a +/− press: changes intensity during ERG steps, gradient during free ride.
+   * Handle a +/− press: changes intensity during ERG steps, the target by 5 W
+   * during a test effort, and the gradient during free ride.
    * @param {1|-1} direction
-   * @returns {{kind:'intensity'|'grade', value:number}}
+   * @returns {{kind:'intensity'|'grade'|'effort', value:number}}
    */
   nudge(direction) {
     const pos = this.position();
-    if (this.done || !pos || pos.segment.free) {
+    if (pos?.segment.tag === 'effort') {
+      this.effortOffsets[pos.index] = (this.effortOffsets[pos.index] ?? 0) + direction * EFFORT_STEP_W;
+      return { kind: 'effort', value: this.targetWatts(pos) };
+    }
+    if (!pos || pos.segment.free) {
       this.grade = clamp(this.grade + direction, ...GRADE_RANGE);
       return { kind: 'grade', value: this.grade };
     }
@@ -190,6 +221,6 @@ export class RideSession {
 
   /** Plain object for storage and FIT export. */
   toRecord() {
-    return { id: this.id, name: this.name, start: this.start, ftp: this.ftp, segments: this.segments, samples: this.samples, trace: this.trace };
+    return { id: this.id, name: this.name, start: this.start, ftp: this.ftp, test: this.test, segments: this.segments, samples: this.samples, trace: this.trace };
   }
 }

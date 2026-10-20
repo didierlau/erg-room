@@ -18,7 +18,7 @@ test('first run seeds examples and default settings', () => {
 test('settings, workouts and drafts round-trip', () => {
   const repo = createRepository(createStorage(createMemoryBackend()));
   repo.saveSettings({ ftp: 260, smooth: 1 });
-  assert.deepEqual(repo.loadSettings(), { ftp: 260, smooth: 1 });
+  assert.deepEqual(repo.loadSettings(), { ...DEFAULT_SETTINGS, ftp: 260, smooth: 1 }, 'new settings get their defaults');
   repo.saveWorkouts([]);
   assert.deepEqual(repo.loadWorkouts(), []);
   repo.saveDraft({ id: 'd' });
