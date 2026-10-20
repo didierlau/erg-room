@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1316">
+<title>Erg Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230e1316%27/%3E%3Cpath d=%27M5 24h5v-8h5v-6h5v9h4v5h3%27 fill=%27none%27 stroke=%27%23efc12c%27 stroke-width=%273%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+<script type="module" src="src/main.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><h1>Erg Room</h1><span>structured workouts, nothing else</span></div>
+    <div class="chips">
+      <button class="chip" id="chip-trainer" data-state="off"><span class="dot"></span>Trainer <small>Connect</small></button>
+      <button class="chip" id="chip-click" data-state="off"><span class="dot"></span>Click <small>Connect</small></button>
+      <button class="chip" id="chip-hr" data-state="off"><span class="dot"></span>Heart rate <small>Connect</small></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="view-library">
+  <div class="banner warn" id="bt-warn" hidden><p id="bt-warn-text"></p></div>
+  <div class="banner warn" id="recover" hidden><p id="recover-text"></p>
+    <button class="btn small primary" id="recover-save">Save ride</button>
+    <button class="btn small ghost" id="recover-discard">Discard</button></div>
+
+  <section>
+    <div class="section-head">
+      <h2>Workouts</h2>
+      <label class="btn" for="zwo-input">Import .zwo</label>
+      <input type="file" id="zwo-input" accept=".zwo,.xml,application/xml,text/xml" multiple hidden>
+      <button class="btn primary" id="new-workout">New workout</button>
+    </div>
+    <div class="grid" id="workout-list"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Rides</h2><span class="foot">Download a ride as .FIT and upload it to Strava, Garmin Connect, intervals.icu or TrainingPeaks.</span></div>
+    <div class="scroll"><table class="hist"><thead><tr><th>Ride</th><th>Date</th><th>Time</th><th>Avg</th><th>NP</th><th>kJ</th><th>HR</th><th></th></tr></thead><tbody id="ride-list"></tbody></table></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Settings</h2></div>
+    <div class="settings">
+      <label class="field"><span class="label">FTP (watts)</span><input type="number" id="set-ftp" min="50" max="600" step="1" inputmode="numeric"><span class="hint">Workout targets are a percentage of this number.</span></label>
+      <label class="field"><span class="label">Power display</span><select id="set-smooth"><option value="1">Instant (1 s)</option><option value="3">3 s average</option><option value="5">5 s average</option></select><span class="hint">Only changes what you see. The file always records every second.</span></label>
+      <div class="field"><span class="label">Click test</span><div class="clicktest"><div class="key" id="key-minus">−</div><div class="key" id="key-plus">+</div></div><span class="hint" id="click-hint">Connect your Click and press a button. During a workout, + and − change intensity by 5%.</span></div>
+    </div>
+  </section>
+  <p class="foot">Workouts, settings and rides are stored in this browser on this device. Erg Room controls the trainer with the standard Bluetooth FTMS protocol.</p>
+</main>
+
+<main class="wrap" id="view-builder" hidden>
+  <div class="builder">
+    <div class="section-head"><h2 id="b-title">New workout</h2>
+      <button class="btn ghost" id="b-cancel">Cancel</button><button class="btn primary" id="b-save">Save workout</button></div>
+    <div class="bhead">
+      <label class="field"><span class="label">Name</span><input id="b-name" class="inp" maxlength="80"></label>
+      <label class="field"><span class="label">Description</span><input id="b-desc" class="inp" maxlength="300"></label>
+    </div>
+    <div class="bpreview">
+      <canvas id="b-canvas"></canvas>
+      <div class="bstats"><span><b id="b-dur">0:00</b>duration</span><span><b id="b-tss">0</b>est. TSS</span><span><b id="b-if">0.00</b>est. IF</span><span><b id="b-kj">0</b>kJ at your FTP</span>
+        <span style="margin-left:auto" class="seg" role="group" aria-label="Power units"><button id="u-pct" aria-pressed="true">% FTP</button><button id="u-w" aria-pressed="false">Watts</button></span></div>
+    </div>
+    <div class="blocks" id="b-blocks"></div>
+    <div class="addrow"><span class="label" style="align-self:center">Add</span>
+      <button class="btn small" data-add="steady">Steady</button>
+      <button class="btn small" data-add="ramp">Ramp</button>
+      <button class="btn small" data-add="intervals">Intervals</button>
+      <button class="btn small" data-add="free">Free ride</button></div>
+  </div>
+</main>
+
+<main class="wrap" id="view-summary" hidden>
+  <div class="section-head"><h2 id="s-title">Ride saved</h2>
+    <button class="btn primary" id="s-fit">Download .FIT</button><button class="btn" id="s-back">Back to workouts</button></div>
+  <div class="sumchart"><canvas id="s-canvas"></canvas></div>
+  <div class="sumgrid" id="s-stats" style="margin-top:12px"></div>
+  <p class="foot" id="s-note"></p>
+</main>
+
+<section id="view-ride" hidden>
+  <div class="rtop">
+    <h2 id="r-name">Workout</h2>
+    <span class="demo-badge" id="r-demo" hidden>Demo</span>
+    <div class="t"><span class="label">Elapsed</span><b id="r-elapsed">0:00</b></div>
+    <div class="t"><span class="label">Left</span><b id="r-left">0:00</b></div>
+    <button class="btn small" id="r-end">Finish</button>
+  </div>
+  <div class="rbody">
+    <div class="hero">
+      <div class="gauge"><span class="label">Power</span><div class="big" id="r-power">—<small>W</small></div><div class="dev" id="r-dev">&nbsp;</div></div>
+      <div class="gauge target" id="r-tgauge"><span class="label" id="r-tlabel">Target</span><div class="big" id="r-target">—<small>W</small></div><div class="dev" id="r-tpct">&nbsp;</div></div>
+    </div>
+    <div class="interval">
+      <div class="clock" id="r-clock">0:00</div>
+      <div class="what"><strong id="r-what">Steady</strong><span class="next" id="r-next">Next: —</span></div>
+    </div>
+    <div class="minis">
+      <div class="mini"><span class="label">Cadence</span><b id="r-cad">—</b></div>
+      <div class="mini"><span class="label">Heart rate</span><b id="r-hr">—</b></div>
+      <div class="mini"><span class="label">Intensity</span><b id="r-int">100%</b></div>
+      <div class="mini"><span class="label">Work</span><b id="r-kj">0 kJ</b></div>
+    </div>
+    <div class="profile"><canvas id="r-canvas"></canvas><span class="state" id="r-state" hidden></span></div>
+  </div>
+  <div class="controls">
+    <button class="btn" id="r-minus"><span class="k">−5%</span></button>
+    <button class="btn" id="r-pause">Pause</button>
+    <button class="btn" id="r-skip">Skip ›</button>
+    <button class="btn" id="r-plus"><span class="k">+5%</span></button>
+  </div>
+</section>
+
+<div class="modal" id="modal" hidden><div class="box"><h3 id="m-title"></h3><p id="m-text"></p><div class="row" id="m-actions"></div></div></div>
+<div class="toast" id="toast" hidden></div>
+</body>
+</html>
