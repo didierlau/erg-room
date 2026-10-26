@@ -24,15 +24,16 @@ const DEMO_RAMP_LIMIT = 1.3;
  *   trainer: import('../ble/ftms-trainer.js').FtmsTrainer,
  *   live: import('../ride/live-data.js').LiveData,
  *   repository: ReturnType<import('../data/repository.js').createRepository>,
- *   rideView: ReturnType<import('../ui/ride-view.js').createRideView>,
+ *   getScreen: () => import('../ui/ride/screen.js').RideScreen,  the screen chosen in Settings, read when a ride starts
  *   wakeLock: {enable:() => void, disable:() => void},
  *   getSettings: () => {ftp:number, smooth:number},
  *   notify: (message:string, durationMs?:number) => void,  short message for the rider (a toast)
  *   onEnded: (savedRide: object | null) => void,
  * }} deps
  */
-export function createRideController({ trainer, live, repository, rideView, wakeLock, getSettings, notify, onEnded }) {
+export function createRideController({ trainer, live, repository, getScreen, wakeLock, getSettings, notify, onEnded }) {
   let session = null;
+  let screen = null;
   let timer = null;
   let demo = null;
   let rampDetector = null;
@@ -74,7 +75,7 @@ export function createRideController({ trainer, live, repository, rideView, wake
       lastDraft = wall;
       repository.saveDraft(session.toRecord());
     }
-    rideView.render(reading, live.smoothedPower(getSettings().smooth, now), now);
+    screen.render({ session, reading, displayPower: live.smoothedPower(getSettings().smooth, now), now });
   }
 
   function start(workout, { demo: isDemo }) {
@@ -83,7 +84,8 @@ export function createRideController({ trainer, live, repository, rideView, wake
     rampDetector = session.test?.protocol === 'ramp' ? new RampFailureDetector() : null;
     lastFrame = performance.now();
     lastDraft = Date.now();
-    rideView.start(session);
+    screen = getScreen();
+    screen.start(session);
     wakeLock.enable();
     clearInterval(timer);
     timer = setInterval(frame, FRAME_MS);
@@ -99,7 +101,8 @@ export function createRideController({ trainer, live, repository, rideView, wake
     const wasDemo = session.demo;
     session = null;
     demo = null;
-    rideView.stop();
+    screen.stop();
+    screen = null;
 
     repository.clearDraft();
     if (!save || record.samples.p.length < MIN_SAMPLES_TO_SAVE) {
@@ -126,10 +129,12 @@ export function createRideController({ trainer, live, repository, rideView, wake
     finish(save) { onEnded(finish(save)); },
     saveRecord,
     get active() { return session != null; },
+    /** True while the current ride is a demo (nothing will be saved). */
+    get demo() { return Boolean(session?.demo); },
     nudge(direction) {
       if (!session) return;
       notify(describeNudge(session.nudge(direction)));
-      rideView.invalidateChart();
+      screen.redraw();
       frame();
     },
     togglePause() {

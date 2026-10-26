@@ -48,3 +48,13 @@ test('unavailable storage never throws', () => {
   assert.equal(repo.addRide({ id: 'x' }).saved, false);
   assert.doesNotThrow(() => repo.clearDraft());
 });
+
+test('v1 settings are migrated to v2 with the default ride screen', () => {
+  const storage = createStorage(createMemoryBackend());
+  storage.set('schema', 1);
+  storage.set('settings', { ftp: 240, smooth: 3, lthr: null, maxHr: null, ftpHistory: [] });
+  const repo = createRepository(storage);
+  assert.equal(storage.get('schema'), SCHEMA_VERSION);
+  assert.equal(repo.loadSettings().rideScreen, 'dashboard');
+  assert.equal(repo.loadSettings().ftp, 240);
+});

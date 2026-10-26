@@ -16,8 +16,9 @@ import { methodName } from './ftp-result.js';
  *   onOpenRide:(ride) => void, onStartTest:(protocolId:string) => void, onEstimateFromRides:() => void,
  *   onSettingsChange:(patch:object) => void,
  * }} actions
+ * @param {{rideScreens:Array<{id:string, name:string, description:string}>}} options  choices for the ride-screen setting
  */
-export function createLibraryView(actions) {
+export function createLibraryView(actions, { rideScreens }) {
   const root = $('#view-library');
   const workoutList = $('#workout-list');
   const rideList = $('#ride-list');
@@ -26,7 +27,11 @@ export function createLibraryView(actions) {
   const lthrInput = $('#set-lthr');
   const maxHrInput = $('#set-maxhr');
   const testList = $('#test-list');
+  const screenSelect = $('#set-screen');
   let lastState = null;
+
+  screenSelect.replaceChildren(...rideScreens.map((screen) => new Option(screen.name, screen.id)));
+  screenSelect.addEventListener('change', () => actions.onSettingsChange({ rideScreen: screenSelect.value }));
 
   $('#zwo-input').addEventListener('change', (e) => {
     const files = [...e.target.files];
@@ -135,6 +140,8 @@ export function createLibraryView(actions) {
 
     ftpInput.value = state.settings.ftp;
     smoothSelect.value = String(state.settings.smooth);
+    screenSelect.value = state.settings.rideScreen;
+    $('#screen-hint').textContent = rideScreens.find((screen) => screen.id === state.settings.rideScreen)?.description ?? '';
     lthrInput.value = state.settings.lthr ?? '';
     maxHrInput.value = state.settings.maxHr ?? '';
   }

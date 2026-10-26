@@ -58,6 +58,7 @@
       <label class="field"><span class="label">FTP (watts)</span><input type="number" id="set-ftp" min="50" max="600" step="1" inputmode="numeric"><span class="hint" id="ftp-hint">Workout targets are a percentage of this number.</span></label>
       <label class="field"><span class="label">Threshold heart rate (bpm)</span><input type="number" id="set-lthr" min="100" max="220" step="1" inputmode="numeric" placeholder="Optional"><span class="hint">Measured by the 20-minute test. Used by the heart-rate check.</span></label>
       <label class="field"><span class="label">Max heart rate (bpm)</span><input type="number" id="set-maxhr" min="120" max="230" step="1" inputmode="numeric" placeholder="Optional"><span class="hint">Highest you’ve seen, e.g. at the end of a ramp test.</span></label>
+      <label class="field"><span class="label">Ride screen</span><select id="set-screen"></select><span class="hint" id="screen-hint">What you see while riding. The workout and the trainer control are the same on every screen.</span></label>
       <label class="field"><span class="label">Power display</span><select id="set-smooth"><option value="1">Instant (1 s)</option><option value="3">3 s average</option><option value="5">5 s average</option></select><span class="hint">Only changes what you see. The file always records every second.</span></label>
       <div class="field"><span class="label">Click test</span><div class="clicktest"><div class="key" id="key-minus">−</div><div class="key" id="key-plus">+</div></div><span class="hint" id="click-hint">Connect your Click and press a button. During a workout, + and − change intensity by 5%, or the target by 5 W during an FTP test effort.</span></div>
     </div>
@@ -95,39 +96,6 @@
   <div class="sumgrid" id="s-stats" style="margin-top:12px"></div>
   <p class="foot" id="s-note"></p>
 </main>
-
-<section id="view-ride" hidden>
-  <div class="rtop">
-    <h2 id="r-name">Workout</h2>
-    <span class="demo-badge" id="r-demo" hidden>Demo</span>
-    <div class="t"><span class="label">Elapsed</span><b id="r-elapsed">0:00</b></div>
-    <div class="t"><span class="label">Left</span><b id="r-left">0:00</b></div>
-    <button class="btn small" id="r-end">Finish</button>
-  </div>
-  <div class="rbody">
-    <div class="hero">
-      <div class="gauge"><span class="label">Power</span><div class="big" id="r-power">—<small>W</small></div><div class="dev" id="r-dev">&nbsp;</div></div>
-      <div class="gauge target" id="r-tgauge"><span class="label" id="r-tlabel">Target</span><div class="big" id="r-target">—<small>W</small></div><div class="dev" id="r-tpct">&nbsp;</div></div>
-    </div>
-    <div class="interval">
-      <div class="clock" id="r-clock">0:00</div>
-      <div class="what"><strong id="r-what">Steady</strong><span class="next" id="r-next">Next: —</span></div>
-    </div>
-    <div class="minis">
-      <div class="mini"><span class="label">Cadence</span><b id="r-cad">—</b></div>
-      <div class="mini"><span class="label">Heart rate</span><b id="r-hr">—</b></div>
-      <div class="mini"><span class="label">Intensity</span><b id="r-int">100%</b></div>
-      <div class="mini"><span class="label">Work</span><b id="r-kj">0 kJ</b></div>
-    </div>
-    <div class="profile"><canvas id="r-canvas"></canvas><span class="state" id="r-state" hidden></span></div>
-  </div>
-  <div class="controls">
-    <button class="btn" id="r-minus"><span class="k">−5%</span></button>
-    <button class="btn" id="r-pause">Pause</button>
-    <button class="btn" id="r-skip">Skip ›</button>
-    <button class="btn" id="r-plus"><span class="k">+5%</span></button>
-  </div>
-</section>
 
 <div class="modal" id="modal" hidden><div class="box"><h3 id="m-title"></h3><p id="m-text"></p><div class="row" id="m-actions"></div></div></div>
 <div class="toast" id="toast" hidden></div>

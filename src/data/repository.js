@@ -7,7 +7,7 @@
  */
 import { EXAMPLE_WORKOUTS, cloneWorkout } from '../workout/model.js';
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const KEYS = {
   schema: 'schema',
@@ -19,9 +19,10 @@ const KEYS = {
 
 /**
  * ftp watts · smooth display smoothing in seconds · lthr/maxHr bpm or null ·
- * ftpHistory [{date, ftp, method}] each time an FTP result was applied
+ * ftpHistory [{date, ftp, method}] each time an FTP result was applied ·
+ * rideScreen id of the ride screen to show (see ui/ride/screens.js)
  */
-export const DEFAULT_SETTINGS = Object.freeze({ ftp: 200, smooth: 3, lthr: null, maxHr: null, ftpHistory: [] });
+export const DEFAULT_SETTINGS = Object.freeze({ ftp: 200, smooth: 3, lthr: null, maxHr: null, ftpHistory: [], rideScreen: 'dashboard' });
 
 /** @param {ReturnType<import('../core/storage.js').createStorage>} storage */
 export function createRepository(storage) {
@@ -85,5 +86,10 @@ function migrate(storage) {
   const version = storage.get(KEYS.schema, 0);
   if (version === SCHEMA_VERSION) return;
   // v0 -> v1: same format as the first release; only the version marker is new.
+  // v1 -> v2: settings gain rideScreen; older settings get the default.
+  if (version < 2) {
+    const settings = storage.get(KEYS.settings, null);
+    if (settings && settings.rideScreen == null) storage.set(KEYS.settings, { ...settings, rideScreen: DEFAULT_SETTINGS.rideScreen });
+  }
   storage.set(KEYS.schema, SCHEMA_VERSION);
 }

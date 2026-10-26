@@ -17,7 +17,7 @@ import { bindDeviceChip } from './ui/device-chips.js';
 import { bindRideKeys } from './ui/ride-keys.js';
 import { createLibraryView } from './ui/library-view.js';
 import { createBuilderView } from './ui/builder-view.js';
-import { createRideView } from './ui/ride-view.js';
+import { RIDE_SCREENS, rideScreenById } from './ui/ride/screens.js';
 import { createSummaryView } from './ui/summary-view.js';
 import { createRideController } from './app/ride-controller.js';
 import { downloadFit, downloadZwo, uploadToGarmin } from './app/exports.js';
@@ -43,7 +43,7 @@ const live = new LiveData();
 let current = 'library';
 function show(view) {
   current = view;
-  for (const [name, v] of Object.entries(views)) v.root.hidden = name !== view;
+  for (const name of ['library', 'builder', 'summary', 'ride']) views[name].root.hidden = name !== view;
   $('.top').hidden = view === 'ride';
   if (view === 'library') renderLibrary();
   window.scrollTo(0, 0);
@@ -81,6 +81,7 @@ function changeSettings(patch) {
     Object.assign(state.settings, patch);
     repository.saveSettings(state.settings);
     if ('ftp' in patch) toast(`FTP set to ${patch.ftp} W`);
+    if ('rideScreen' in patch) useRideScreen(patch.rideScreen);
   }
   renderLibrary();
 }
@@ -164,7 +165,7 @@ const library = createLibraryView({
   onEstimateFromRides: estimateFromRides,
   onDeleteRide: (ride) => { repository.deleteRide(ride.id); renderLibrary(); },
   onSettingsChange: changeSettings,
-});
+}, { rideScreens: RIDE_SCREENS });
 
 const builder = createBuilderView({
   getFtp: () => state.settings.ftp,
@@ -179,17 +180,43 @@ const summary = createSummaryView({
   renderTestResult: (container, ride) => renderFtpResult(container, analyzeTest(ride, state.settings), resultOptions(!ride.demo)),
 });
 
+/* ---------- ride screens ---------- */
+function confirmFinish() {
+  showDialog({
+    title: 'Finish this ride?',
+    text: rides.demo ? 'Demo rides are not saved.' : 'Your ride will be saved and ready to download as a .FIT file.',
+    actions: [
+      { label: 'Keep riding', style: 'ghost' },
+      { label: 'Discard', style: 'danger', onClick: () => rides.finish(false) },
+      { label: 'Finish & save', style: 'primary', onClick: () => rides.finish(true) },
+    ],
+  });
+}
 const rideActions = {
   onNudge: (dir) => rides.nudge(dir),
   onTogglePause: () => rides.togglePause(),
   onSkip: () => rides.skip(),
-  onFinish: (save) => rides.finish(save),
+  onFinish: confirmFinish,
 };
-const rideView = createRideView(rideActions);
 bindRideKeys({ isRiding: () => current === 'ride' && rides.active, ...rideActions });
 
+/** One instance per screen, created on first use; the chosen one is mounted. */
+const screens = new Map();
+let rideScreen = null;
+function useRideScreen(id) {
+  const entry = rideScreenById(id);
+  if (!screens.has(entry.id)) {
+    const screen = entry.create(rideActions);
+    $('#modal').before(screen.root);
+    screens.set(entry.id, screen);
+  }
+  rideScreen = screens.get(entry.id);
+}
+useRideScreen(state.settings.rideScreen);
+
 const rides = createRideController({
-  trainer, live, repository, rideView,
+  trainer, live, repository,
+  getScreen: () => rideScreen,
   wakeLock: createWakeLock(),
   getSettings: () => state.settings,
   notify: toast,
@@ -198,7 +225,7 @@ const rides = createRideController({
   },
 });
 
-const views = { library, builder, summary, ride: rideView };
+const views = { library, builder, summary, get ride() { return rideScreen; } };
 
 /* ---------- devices ---------- */
 const support = bluetoothSupport();
@@ -224,9 +251,6 @@ if (draft?.samples?.p?.length >= MIN_DRAFT_SAMPLES) {
   });
 }
 
-window.addEventListener('resize', () => {
-  if (current === 'ride') rideView.invalidateChart();
-  else views[current]?.redraw?.();
-});
+window.addEventListener('resize', () => views[current]?.redraw?.());
 
 show('library');

@@ -22,7 +22,9 @@ Run `npm run lint && npm test` before every commit. CI runs both; Pages deploys 
 
 - No build step and no runtime dependencies: plain ES modules loaded by the browser. Don't add a bundler or framework.
 - Logic lives in `src/workout`, `src/ride`, `src/fit`, `src/ftp`, `src/data` and the parser functions in `src/ble`. These never touch the DOM, take time (`now`, `wall`) as arguments, and have unit tests.
-- `src/ui/*` only render and report user actions through callbacks. `src/main.js` is the composition root and the only place that wires devices, storage and views together. The ride frame loop lives in `src/app/ride-controller.js`.
+- `src/ui/*` only render and report user actions through callbacks. `src/main.js` is the composition root and the only place that wires devices, storage and views together. The ride frame loop lives in `src/app/ride-controller.js`; `src/app/exports.js` holds the download and Garmin hand-off.
+- Ride screens are plug-ins under `src/ui/ride/<id>/screen.js`, registered in `src/ui/ride/screens.js` and chosen by the `rideScreen` setting. Each screen owns its markup (built in JS) and its stylesheet (loaded with `loadStylesheet`), implements the `RideScreen` contract in `src/ui/ride/screen.js`, and uses `src/ride/describe.js` for shared wording. Shared full-screen rules live in `styles.css` under `.ride-screen`; a screen scopes its own rules under `.ride-<id>`.
+- Keyboard shortcuts (`src/ui/ride-keys.js`) and the Click are input sources: they only call the ride actions, never a screen directly.
 - Persisted data goes through `src/data/repository.js` (localStorage, key prefix `ergroom.`). If a stored shape changes, bump `SCHEMA_VERSION` and add a migration step.
 - Powers are fractions of FTP in workouts; durations are whole seconds. Segments can carry `tag` (`ramp-step`, `effort`, `stage`) for FTP tests.
 - Put named constants at the top of a module instead of magic numbers, and add a JSDoc comment to each exported function.
