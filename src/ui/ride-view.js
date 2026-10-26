@@ -6,6 +6,7 @@ import { $, showDialog } from './dom.js';
 import { drawProfile } from './profile-chart.js';
 import { formatDuration } from '../core/format.js';
 import { zoneOf } from '../workout/model.js';
+import { describeNext, describeState, describeStep, nudgeStepLabel } from '../ride/describe.js';
 
 /** The profile chart is redrawn at most this often (ms); numbers update every frame. */
 const CHART_REDRAW_MS = 900;
@@ -33,39 +34,6 @@ export function createRideView(actions) {
       { label: 'Finish & save', style: 'primary', onClick: () => actions.onFinish(true) },
     ],
   }));
-
-  document.addEventListener('keydown', (e) => {
-    if (!session || root.hidden || e.target.tagName === 'INPUT' || !$('#modal').hidden) return;
-    const keys = { '+': () => actions.onNudge(1), '=': () => actions.onNudge(1), ArrowUp: () => actions.onNudge(1),
-      '-': () => actions.onNudge(-1), ArrowDown: () => actions.onNudge(-1), ' ': () => actions.onTogglePause(), ArrowRight: () => actions.onSkip() };
-    if (keys[e.key]) {
-      keys[e.key]();
-      e.preventDefault();
-    }
-  });
-
-  function describeStep(position) {
-    if (!position) return session.test ? 'Test done · spin easy' : 'Cool down as you like';
-    const s = position.segment;
-    if (s.tag === 'ramp-step') return `Ramp · ${s.label}`;
-    if (s.label) return s.label;
-    if (s.free) return 'Free ride';
-    if (s.reps) return `${s.on ? 'Interval' : 'Recovery'} ${s.rep} of ${s.reps}`;
-    if (s.p1 !== s.p2) return s.p2 > s.p1 ? 'Ramp up' : 'Ramp down';
-    return 'Steady';
-  }
-
-  function describeNext(position) {
-    if (!position) return 'Tap Finish to save your ride';
-    const next = session.segments[position.index + 1];
-    if (!next) return 'Next: finish';
-    const pct = (f) => Math.round(f * session.intensity * 100);
-    if (next.tag === 'ramp-step') return `Next: ${Math.round(next.p1 * session.ftp * session.intensity)} W. Hold it as long as you can`;
-    if (next.tag === 'effort') return `Next: ${next.label}, as hard as you can sustain`;
-    if (next.free) return `Next: ${formatDuration(next.d)} free ride`;
-    if (next.p1 !== next.p2) return `Next: ${formatDuration(next.d)} ramp ${pct(next.p1)}→${pct(next.p2)}%`;
-    return `Next: ${formatDuration(next.d)} at ${Math.round(next.p1 * session.ftp * session.intensity)} W`;
-  }
 
   /**
    * @param {import('../ride/engine.js').Reading} reading
@@ -96,8 +64,8 @@ export function createRideView(actions) {
     else el.dev.textContent = power != null && target ? `${power - target >= 0 ? '+' : ''}${power - target} W vs target` : reading.fresh ? ' ' : 'No data from trainer';
 
     el.clock.textContent = position ? formatDuration(Math.ceil(position.left)) : '0:00';
-    el.what.textContent = describeStep(position);
-    el.next.textContent = describeNext(position);
+    el.what.textContent = describeStep(s, position);
+    el.next.textContent = describeNext(s, position);
     el.cad.textContent = reading.fresh && reading.cadence ? Math.round(reading.cadence) : '—';
     el.hr.textContent = reading.hr ?? '—';
     el.int.textContent = `${Math.round(s.intensity * 100)}%`;
@@ -106,16 +74,14 @@ export function createRideView(actions) {
     el.left.textContent = s.test?.protocol === 'ramp' && !s.done ? 'Until you stop' : formatDuration(s.done ? 0 : s.total - s.workoutTime);
     el.pause.textContent = s.paused ? 'Resume' : 'Pause';
     // The +/− buttons change what the current step allows: intensity, effort watts or gradient.
-    const step = effort ? '5 W' : !position || position.segment.free ? '1%' : '5%';
+    const step = nudgeStepLabel(position);
     if (el.plus.dataset.step !== step) {
       el.plus.dataset.step = step;
       el.plus.innerHTML = `<span class="k">+${step}</span>`;
       el.minus.innerHTML = `<span class="k">−${step}</span>`;
     }
 
-    let message = '';
-    if (s.paused) message = 'Paused';
-    else if (!s.pedalling && !s.done) message = reading.fresh ? 'Start pedalling to continue' : 'Waiting for trainer data';
+    const message = describeState(s, reading);
     el.state.hidden = !message;
     el.state.textContent = message;
 

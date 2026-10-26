@@ -37,6 +37,9 @@ export function showDialog({ title, text = '', actions }) {
   row.lastElementChild?.focus();
 }
 
+/** True while a dialog is showing, so keyboard shortcuts stay quiet. */
+export const isDialogOpen = () => !$('#modal').hidden;
+
 /** Offer a generated file to the user. */
 export function downloadBlob(blob, fileName) {
   const a = document.createElement('a');

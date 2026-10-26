@@ -6,7 +6,7 @@ import { RideSession } from '../ride/engine.js';
 import { DemoRider } from '../ride/demo-rider.js';
 import { rideStats } from '../ride/stats.js';
 import { RampFailureDetector } from '../ftp/ramp-failure.js';
-import { createWakeLock, toast } from '../ui/dom.js';
+import { describeNudge } from '../ride/describe.js';
 
 /** Frame loop interval (ms). */
 const FRAME_MS = 250;
@@ -25,12 +25,13 @@ const DEMO_RAMP_LIMIT = 1.3;
  *   live: import('../ride/live-data.js').LiveData,
  *   repository: ReturnType<import('../data/repository.js').createRepository>,
  *   rideView: ReturnType<import('../ui/ride-view.js').createRideView>,
+ *   wakeLock: {enable:() => void, disable:() => void},
  *   getSettings: () => {ftp:number, smooth:number},
+ *   notify: (message:string, durationMs?:number) => void,  short message for the rider (a toast)
  *   onEnded: (savedRide: object | null) => void,
  * }} deps
  */
-export function createRideController({ trainer, live, repository, rideView, getSettings, onEnded }) {
-  const wakeLock = createWakeLock();
+export function createRideController({ trainer, live, repository, rideView, wakeLock, getSettings, notify, onEnded }) {
   let session = null;
   let timer = null;
   let demo = null;
@@ -61,10 +62,10 @@ export function createRideController({ trainer, live, repository, rideView, getS
         session.endWorkout();
         session.takeCompletedEvent();
         rampDetector = null;
-        toast('Ramp test complete. Spin easy, then tap Finish to see your FTP.', 5000);
+        notify('Ramp test complete. Spin easy, then tap Finish to see your FTP.', 5000);
       }
     }
-    if (session.takeCompletedEvent()) toast(session.test ? 'Test complete. Spin easy, then tap Finish to see your result.' : 'Workout complete. Keep spinning or tap Finish.', 4000);
+    if (session.takeCompletedEvent()) notify(session.test ? 'Test complete. Spin easy, then tap Finish to see your result.' : 'Workout complete. Keep spinning or tap Finish.', 4000);
 
     const command = session.nextCommand(now);
     if (command && !session.demo) trainer.send(command);
@@ -102,7 +103,7 @@ export function createRideController({ trainer, live, repository, rideView, getS
 
     repository.clearDraft();
     if (!save || record.samples.p.length < MIN_SAMPLES_TO_SAVE) {
-      if (save) toast('Ride too short to save');
+      if (save) notify('Ride too short to save');
       return null;
     }
     // Demo rides are shown in the summary (so a demo test shows its result) but never stored.
@@ -115,8 +116,8 @@ export function createRideController({ trainer, live, repository, rideView, getS
     const ride = { ...record, stats: rideStats(record) };
     const { saved, dropped } = repository.addRide(ride);
     repository.clearDraft();
-    if (!saved) toast('Could not save the ride: browser storage is full or blocked');
-    else if (dropped) toast(`Storage was full, so the ${dropped} oldest ride${dropped > 1 ? 's were' : ' was'} removed`);
+    if (!saved) notify('Could not save the ride: browser storage is full or blocked');
+    else if (dropped) notify(`Storage was full, so the ${dropped} oldest ride${dropped > 1 ? 's were' : ' was'} removed`);
     return saved ? ride : null;
   }
 
@@ -127,9 +128,7 @@ export function createRideController({ trainer, live, repository, rideView, getS
     get active() { return session != null; },
     nudge(direction) {
       if (!session) return;
-      const result = session.nudge(direction);
-      const messages = { grade: `Gradient ${result.value}%`, effort: `Target ${result.value} W`, intensity: `Intensity ${Math.round(result.value * 100)}%` };
-      toast(messages[result.kind]);
+      notify(describeNudge(session.nudge(direction)));
       rideView.invalidateChart();
       frame();
     },
@@ -140,7 +139,7 @@ export function createRideController({ trainer, live, repository, rideView, getS
     },
     skip() {
       if (session?.skip()) {
-        toast('Skipped to next step');
+        notify('Skipped to next step');
         frame();
       }
     },

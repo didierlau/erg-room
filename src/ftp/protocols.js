@@ -85,3 +85,18 @@ export function buildTestWorkout(id) {
   if (!protocol) throw new Error(`Unknown FTP test: ${id}`);
   return { id: `test-${id}`, name: protocol.name, description: protocol.summary, blocks: protocol.blocks(), test: { protocol: id } };
 }
+
+/**
+ * What stands between the rider and starting a test.
+ * @param {{needsHeartRate:boolean}} protocol
+ * @param {{lthr?:number|null, maxHr?:number|null}} settings
+ * @param {boolean} heartRateConnected  a strap is connected right now
+ * @returns {'ready' | 'needs-threshold' | 'needs-strap'}
+ *   needs-threshold: the test cannot be analysed without a threshold or max heart rate;
+ *   needs-strap: the rider should be offered to connect a strap first.
+ */
+export function testStartRequirement(protocol, settings, heartRateConnected) {
+  if (!protocol.needsHeartRate) return 'ready';
+  if (!settings.lthr && !settings.maxHr) return 'needs-threshold';
+  return heartRateConnected ? 'ready' : 'needs-strap';
+}

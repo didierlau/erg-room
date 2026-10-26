@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { flatten } from '../src/workout/model.js';
-import { PROTOCOLS, buildTestWorkout, RAMP } from '../src/ftp/protocols.js';
+import { PROTOCOLS, buildTestWorkout, RAMP, protocolById, testStartRequirement } from '../src/ftp/protocols.js';
 import { analyzeTest, estimateFromHistory, bestAverage, linearFit, fitCriticalPower } from '../src/ftp/analysis.js';
 import { RampFailureDetector } from '../src/ftp/ramp-failure.js';
 import { RideSession } from '../src/ride/engine.js';
@@ -36,6 +36,14 @@ test('every protocol builds a tagged workout', () => {
     assert.ok(flatten(w.blocks).some((s) => s.tag), p.id);
   }
   assert.throws(() => buildTestWorkout('nope'), /Unknown FTP test/);
+});
+
+test('testStartRequirement only asks for heart rate when the protocol needs it', () => {
+  const none = { lthr: null, maxHr: null };
+  assert.equal(testStartRequirement(protocolById('ramp'), none, false), 'ready');
+  assert.equal(testStartRequirement(protocolById('submax'), none, true), 'needs-threshold');
+  assert.equal(testStartRequirement(protocolById('submax'), { lthr: 165, maxHr: null }, false), 'needs-strap');
+  assert.equal(testStartRequirement(protocolById('submax'), { lthr: null, maxHr: 190 }, true), 'ready');
 });
 
 test('helpers: bestAverage, linearFit, fitCriticalPower', () => {
