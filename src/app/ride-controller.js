@@ -6,7 +6,7 @@ import { RideSession } from '../ride/engine.js';
 import { DemoRider } from '../ride/demo-rider.js';
 import { rideStats } from '../ride/stats.js';
 import { RampFailureDetector } from '../ftp/ramp-failure.js';
-import { describeNudge } from '../ride/describe.js';
+import { describeNudge, describeResistance } from '../ride/describe.js';
 
 /** Frame loop interval (ms). */
 const FRAME_MS = 250;
@@ -48,8 +48,14 @@ export function createRideController({ trainer, live, repository, getScreen, wak
     const now = performance.now();
     const wall = Date.now();
     if (demo) {
-      const position = session.position();
-      const simulated = demo.step((now - lastFrame) / 1000, { paused: session.paused, target: session.targetWatts(position), grade: session.grade, limit: session.ftp * DEMO_RAMP_LIMIT });
+      // The demo rider responds to what the trainer would be told: ERG target or simulated gradient.
+      const want = session.desiredCommand();
+      const simulated = demo.step((now - lastFrame) / 1000, {
+        paused: session.paused,
+        target: want.mode === 'erg' ? want.watts : null,
+        grade: want.mode === 'sim' ? want.grade : 0,
+        limit: session.ftp * DEMO_RAMP_LIMIT,
+      });
       live.updateTrainer(simulated, now);
     }
     lastFrame = now;
@@ -134,6 +140,26 @@ export function createRideController({ trainer, live, repository, getScreen, wak
     nudge(direction) {
       if (!session) return;
       notify(describeNudge(session.nudge(direction)));
+      screen.redraw();
+      frame();
+    },
+    /** Change virtual gear (avatar screen). */
+    shift(direction) {
+      if (!session) return;
+      session.shift(direction);
+      screen.redraw();
+      frame();
+    },
+    /** A +/− from the Click or keyboard: whatever the current screen uses them for. */
+    press(direction) {
+      if (screen?.click === 'shift') this.shift(direction);
+      else this.nudge(direction);
+    },
+    /** @param {import('../ride/engine.js').Resistance} mode */
+    setResistance(mode) {
+      if (!session || session.resistance === mode) return;
+      session.setResistance(mode);
+      notify(describeResistance(mode), 3000);
       screen.redraw();
       frame();
     },

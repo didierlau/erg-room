@@ -76,3 +76,13 @@ export function describeNudge(result) {
   };
   return messages[result.kind];
 }
+
+/**
+ * The toast shown when the trainer mode changes on the avatar screen.
+ * @param {import('./engine.js').Resistance} mode
+ */
+export function describeResistance(mode) {
+  return mode === 'gears'
+    ? 'ERG off: shift gears and pace yourself to the target'
+    : 'ERG on: the trainer holds the target';
+}

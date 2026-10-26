@@ -11,9 +11,14 @@
  *   t seconds since start, p watts, c rpm, h bpm, s m/s, d metres (cumulative), g workout step index
  * @typedef {{fresh:boolean, power:number, cadence:number, speed:number, hr:number|null}} Reading
  * @typedef {{mode:'erg', watts:number} | {mode:'sim', grade:number}} TrainerCommand
+ * @typedef {'erg' | 'gears'} Resistance
+ *   erg: the trainer holds the target; gears: simulation mode where the terrain
+ *   (from the target) plus the virtual gear set the resistance and the rider paces.
  */
 import { clamp, createId } from '../core/format.js';
 import { flatten, totalDuration, segmentAt, fractionAt } from '../workout/model.js';
+import { VirtualGears } from './gears.js';
+import { terrainGrade } from './terrain.js';
 
 export const INTENSITY_STEP = 0.05;
 export const INTENSITY_RANGE = [0.5, 1.5];
@@ -24,6 +29,8 @@ export const EFFORT_STEP_W = 5;
 const RAMP_UPDATE_INTERVAL_MS = 950;
 /** A target change bigger than this (watts) is sent at once, even mid-ramp. */
 const IMMEDIATE_CHANGE_WATTS = 15;
+/** A gradient change of at least this much (percent) is sent at once; smaller ones are rate-limited like ramps. */
+const IMMEDIATE_CHANGE_GRADE = 1;
 /** Longest gap (seconds) credited when integrating distance and work, e.g. after the tab was asleep. */
 const MAX_SAMPLE_GAP_S = 5;
 /** Longest frame (seconds) credited to workout time. */
@@ -47,6 +54,9 @@ export class RideSession {
     this.workoutTime = 0;
     this.intensity = 1;
     this.grade = 0;
+    /** @type {Resistance} */
+    this.resistance = 'erg';
+    this.gears = new VirtualGears();
     this.paused = false;
     this.done = false;
     this.pedalling = false;
@@ -80,6 +90,21 @@ export class RideSession {
     if (f == null) return null;
     if (position.segment.tag === 'effort') return Math.max(0, Math.round(f * this.ftp + (this.effortOffsets[position.index] ?? 0)));
     return Math.round(f * this.ftp * this.intensity);
+  }
+
+  /**
+   * Road gradient (percent) for the current step: from the target in ERG steps,
+   * the rider's own gradient in free ride, flat once the workout is done.
+   */
+  terrainGrade(position = this.position()) {
+    if (!position) return 0;
+    if (position.segment.free) return this.grade;
+    return terrainGrade(fractionAt(position.segment, position.into) * this.intensity);
+  }
+
+  /** Gradient sent to the trainer in gears mode: terrain plus the gear's offset. */
+  simGrade(position = this.position()) {
+    return Math.round(clamp(this.terrainGrade(position) + this.gears.gradeOffset, ...GRADE_RANGE) * 10) / 10;
   }
 
   /** Average recorded power so far in workout step `index` (default: the current one). */
@@ -159,7 +184,9 @@ export class RideSession {
   /** What the trainer should be doing right now. */
   desiredCommand() {
     const pos = this.position();
-    if (this.paused || this.done || !pos || pos.segment.free) return { mode: 'sim', grade: this.paused ? 0 : this.grade };
+    if (this.paused) return { mode: 'sim', grade: 0 };
+    if (this.resistance === 'gears') return { mode: 'sim', grade: this.simGrade(pos) };
+    if (this.done || !pos || pos.segment.free) return { mode: 'sim', grade: this.grade };
     return { mode: 'erg', watts: this.targetWatts(pos) };
   }
 
@@ -171,10 +198,11 @@ export class RideSession {
   nextCommand(now) {
     const want = this.desiredCommand();
     const last = this._lastCommand;
+    const settled = now - this._lastCommandAt >= RAMP_UPDATE_INTERVAL_MS;
     let send;
     if (!last || last.mode !== want.mode) send = true;
-    else if (want.mode === 'sim') send = want.grade !== last.grade;
-    else send = want.watts !== last.watts && (now - this._lastCommandAt >= RAMP_UPDATE_INTERVAL_MS || Math.abs(want.watts - last.watts) > IMMEDIATE_CHANGE_WATTS);
+    else if (want.mode === 'sim') send = want.grade !== last.grade && (settled || Math.abs(want.grade - last.grade) >= IMMEDIATE_CHANGE_GRADE);
+    else send = want.watts !== last.watts && (settled || Math.abs(want.watts - last.watts) > IMMEDIATE_CHANGE_WATTS);
     if (!send) return null;
     this._lastCommand = want;
     this._lastCommandAt = now;
@@ -204,6 +232,21 @@ export class RideSession {
     }
     this.intensity = clamp(Math.round((this.intensity + direction * INTENSITY_STEP) * 100) / 100, ...INTENSITY_RANGE);
     return { kind: 'intensity', value: this.intensity };
+  }
+
+  /**
+   * Change virtual gear. In gears mode this changes the trainer's resistance;
+   * in ERG mode it only changes the virtual speed shown.
+   * @param {1|-1} direction
+   * @returns {number} the new gear
+   */
+  shift(direction) {
+    return this.gears.shift(direction);
+  }
+
+  /** @param {Resistance} mode */
+  setResistance(mode) {
+    this.resistance = mode;
   }
 
   togglePause() {

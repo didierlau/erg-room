@@ -10,13 +10,16 @@
  * @property {number} now  monotonic ms (performance.now())
  *
  * @typedef {object} RideActions
- * @property {(dir:1|-1) => void} onNudge  +/− pressed
+ * @property {(dir:1|-1) => void} onNudge  intensity / effort watts / gradient, as on the dashboard
+ * @property {(dir:1|-1) => void} onShift  virtual gear up or down
+ * @property {(mode:import('../../ride/engine.js').Resistance) => void} onSetResistance  ERG on/off
  * @property {() => void} onTogglePause
  * @property {() => void} onSkip
  * @property {() => void} onFinish  the rider asked to finish; the app confirms and saves
  *
  * @typedef {object} RideScreen
  * @property {HTMLElement} root  full-screen element, hidden when not riding
+ * @property {'nudge'|'shift'} click  what a Click or keyboard +/− does on this screen
  * @property {(session:import('../../ride/engine.js').RideSession) => void} start
  * @property {(frame:RideFrame) => void} render  called every frame (4×/s)
  * @property {() => void} stop

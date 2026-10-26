@@ -114,6 +114,7 @@ export function createDashboardScreen(actions) {
 
   return {
     root,
+    click: 'nudge',
     start(rideSession) {
       session = rideSession;
       lastChart = 0;

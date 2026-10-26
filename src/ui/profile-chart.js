@@ -4,6 +4,7 @@
  * Colours come from the CSS custom properties so both themes work.
  */
 import { zoneOf, totalDuration } from '../workout/model.js';
+import { cssColor, prepareCanvas } from './canvas.js';
 
 /** Headroom above the highest bar. */
 const HEADROOM = 1.06;
@@ -13,26 +14,6 @@ const MIN_SCALE = 1.25;
 const FREE_RIDE_HEIGHT = 0.5;
 /** Ramps are drawn as slices this many pixels wide so each slice gets its own zone colour. */
 const RAMP_SLICE_PX = 3;
-
-function cssColor(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
-/** Resize the backing store to the element's CSS size; returns a 2D context in CSS pixels. */
-function prepareCanvas(canvas) {
-  const dpr = window.devicePixelRatio || 1;
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  if (!w || !h) return null;
-  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) {
-    canvas.width = Math.round(w * dpr);
-    canvas.height = Math.round(h * dpr);
-  }
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, w, h);
-  return { ctx, w, h };
-}
 
 /**
  * @param {HTMLCanvasElement} canvas

@@ -194,11 +194,14 @@ function confirmFinish() {
 }
 const rideActions = {
   onNudge: (dir) => rides.nudge(dir),
+  onShift: (dir) => rides.shift(dir),
+  onSetResistance: (mode) => rides.setResistance(mode),
   onTogglePause: () => rides.togglePause(),
   onSkip: () => rides.skip(),
   onFinish: confirmFinish,
 };
-bindRideKeys({ isRiding: () => current === 'ride' && rides.active, ...rideActions });
+// The Click and the keyboard do whatever +/− means on the current screen.
+bindRideKeys({ isRiding: () => current === 'ride' && rides.active, ...rideActions, onNudge: (dir) => rides.press(dir) });
 
 /** One instance per screen, created on first use; the chosen one is mounted. */
 const screens = new Map();
@@ -240,7 +243,7 @@ trainer.addEventListener('lost', () => live.clearTrainer());
 heartRate.addEventListener('hr', (e) => live.updateHeartRate(e.detail.bpm, performance.now()));
 heartRate.addEventListener('lost', () => live.updateHeartRate(null, performance.now()));
 click.addEventListener('button', (e) => library.showButton(e.detail.button, e.detail.down));
-click.addEventListener('press', (e) => rides.active && rides.nudge(e.detail.button === 'plus' ? 1 : -1));
+click.addEventListener('press', (e) => rides.active && rides.press(e.detail.button === 'plus' ? 1 : -1));
 
 /* ---------- start-up ---------- */
 const draft = repository.loadDraft();

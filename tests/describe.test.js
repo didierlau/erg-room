@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RideSession } from '../src/ride/engine.js';
 import { segmentAt } from '../src/workout/model.js';
-import { describeNext, describeNudge, describeState, describeStep, nudgeStepLabel } from '../src/ride/describe.js';
+import { describeNext, describeNudge, describeResistance, describeState, describeStep, nudgeStepLabel } from '../src/ride/describe.js';
 
 const WORKOUT = {
   name: 'Mixed',
@@ -72,4 +72,9 @@ test('describeNudge formats each kind of change', () => {
   assert.equal(describeNudge({ kind: 'intensity', value: 1.05 }), 'Intensity 105%');
   assert.equal(describeNudge({ kind: 'grade', value: 3 }), 'Gradient 3%');
   assert.equal(describeNudge({ kind: 'effort', value: 255 }), 'Target 255 W');
+});
+
+test('describeResistance explains both trainer modes', () => {
+  assert.match(describeResistance('gears'), /ERG off/);
+  assert.match(describeResistance('erg'), /ERG on/);
 });

@@ -1,8 +1,4 @@
 /* Dashboard ride screen: numbers, interval clock and the workout profile. Loaded by screen.js. */
-.ride-dashboard .rtop{display:flex;align-items:center;gap:10px;padding-block:10px;flex-wrap:wrap}
-.ride-dashboard .rtop h2{font-size:20px;margin-right:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 0}
-.ride-dashboard .rtop .t{display:grid;text-align:right}
-.ride-dashboard .rtop .t b{font-family:var(--display);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
 .ride-dashboard .rbody{flex:1;display:grid;gap:10px;grid-template-columns:1fr;align-content:start}
 .ride-dashboard .hero{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ride-dashboard .gauge{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:10px 14px;display:grid;min-width:0}
@@ -22,9 +18,6 @@
 .ride-dashboard .profile{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px;position:relative}
 .ride-dashboard .profile canvas{width:100%;height:clamp(90px,18vh,170px);display:block}
 .ride-dashboard .state{position:absolute;left:16px;top:12px;font-weight:600;font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
-.ride-dashboard .controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;padding-block:10px 12px}
-.ride-dashboard .controls .btn{padding:14px 8px;font-size:16px;border-radius:12px}
-.ride-dashboard .controls .btn .k{font-family:var(--display);font-size:22px;font-weight:700}
 @media (min-width:900px) and (min-aspect-ratio:4/3){
   .ride-dashboard .rbody{grid-template-columns:1.25fr 1fr;grid-template-areas:"hero interval" "hero minis" "profile profile"}
   .ride-dashboard .hero{grid-area:hero;grid-template-columns:1fr}
@@ -32,4 +25,4 @@
   .ride-dashboard .minis{grid-area:minis;grid-template-columns:1fr 1fr}
   .ride-dashboard .profile{grid-area:profile}
 }
-@media (max-width:420px){ .ride-dashboard .minis{grid-template-columns:1fr 1fr} .ride-dashboard .controls .btn{font-size:14px} }
+@media (max-width:420px){ .ride-dashboard .minis{grid-template-columns:1fr 1fr} }
