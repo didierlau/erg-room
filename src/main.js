@@ -224,7 +224,11 @@ const rides = createRideController({
   getSettings: () => state.settings,
   notify: toast,
   onEnded: (saved) => {
-    if (saved) { summary.show(saved); show('summary'); } else show('library');
+    if (saved) {
+      if (!saved.demo) library.showTab('rides');
+      summary.show(saved);
+      show('summary');
+    } else show('library');
   },
 });
 
@@ -249,7 +253,7 @@ click.addEventListener('press', (e) => rides.active && rides.press(e.detail.butt
 const draft = repository.loadDraft();
 if (draft?.samples?.p?.length >= MIN_DRAFT_SAMPLES) {
   library.showRecovery(draft, {
-    onSave: () => { if (rides.saveRecord(draft)) toast('Ride saved'); renderLibrary(); },
+    onSave: () => { if (rides.saveRecord(draft)) { toast('Ride saved'); library.showTab('rides'); } renderLibrary(); },
     onDiscard: () => repository.clearDraft(),
   });
 }

@@ -26,3 +26,21 @@
   .ride-dashboard .profile{grid-area:profile}
 }
 @media (max-width:420px){ .ride-dashboard .minis{grid-template-columns:1fr 1fr} }
+/* Landscape phone: two rows that fit without scrolling. */
+@media (max-height:500px) and (orientation:landscape){
+  .ride-dashboard .rtop{padding-block:4px}
+  .ride-dashboard .rbody{grid-template-columns:1fr 1fr 1.1fr;gap:8px;grid-template-areas:"hero hero interval" "profile profile minis"}
+  .ride-dashboard .hero{grid-area:hero;grid-template-columns:1fr 1fr;gap:8px}
+  .ride-dashboard .interval{grid-area:interval;padding:6px 12px}
+  .ride-dashboard .minis{grid-area:minis;grid-template-columns:1fr 1fr;gap:8px}
+  .ride-dashboard .profile{grid-area:profile}
+  .ride-dashboard .gauge{padding:6px 12px}
+  .ride-dashboard .gauge .big{font-size:clamp(40px,14vh,72px)}
+  .ride-dashboard .interval .clock{font-size:clamp(32px,12vh,56px)}
+  .ride-dashboard .interval .what strong{font-size:18px}
+  .ride-dashboard .mini{padding:4px 10px}
+  .ride-dashboard .mini b{font-size:clamp(20px,7vh,30px)}
+  .ride-dashboard .profile canvas{height:clamp(60px,16vh,100px)}
+  .ride-dashboard .controls{padding-block:6px 8px;gap:8px}
+  .ride-dashboard .controls .btn{padding:8px 6px}
+}

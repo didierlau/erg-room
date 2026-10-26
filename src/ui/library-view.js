@@ -28,7 +28,17 @@ export function createLibraryView(actions, { rideScreens }) {
   const maxHrInput = $('#set-maxhr');
   const testList = $('#test-list');
   const screenSelect = $('#set-screen');
+  const tabs = [...root.querySelectorAll('#tabs [data-tab]')];
   let lastState = null;
+
+  /** Show one section at a time so each fits a phone screen. */
+  function showTab(name) {
+    for (const button of tabs) button.setAttribute('aria-selected', String(button.dataset.tab === name));
+    for (const panel of root.querySelectorAll('[data-panel]')) panel.hidden = panel.dataset.panel !== name;
+    window.scrollTo(0, 0);
+    if (lastState) render(lastState); // canvases in a hidden panel have no size, so draw them now
+  }
+  tabs.forEach((button) => button.addEventListener('click', () => showTab(button.dataset.tab)));
 
   screenSelect.replaceChildren(...rideScreens.map((screen) => new Option(screen.name, screen.id)));
   screenSelect.addEventListener('change', () => actions.onSettingsChange({ rideScreen: screenSelect.value }));
@@ -101,24 +111,30 @@ export function createLibraryView(actions, { rideScreens }) {
     return card;
   }
 
-  function rideRow(ride) {
+  function rideCard(ride) {
     const s = ride.stats;
     const date = new Date(ride.start);
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${escapeHtml(ride.name)}</td>
-      <td>${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</td>
-      <td>${formatDuration(s.duration)}</td><td>${s.avgPower} W</td><td>${s.normalizedPower} W</td><td>${s.kj}</td><td>${s.avgHr ?? '—'}</td>
-      <td><button class="btn small" data-action="garmin">Garmin</button> <button class="btn small" data-action="fit">.FIT</button>${ride.test ? ' <button class="btn small" data-action="open">Result</button>' : ''} <button class="btn small ghost danger" data-action="delete">Delete</button></td>`;
-    tr.querySelector('[data-action=garmin]').addEventListener('click', () => actions.onUploadGarmin(ride));
-    tr.querySelector('[data-action=fit]').addEventListener('click', () => actions.onDownloadFit(ride));
-    tr.querySelector('[data-action=open]')?.addEventListener('click', () => actions.onOpenRide(ride));
-    tr.querySelector('[data-action=delete]').addEventListener('click', () => showDialog({
+    const card = document.createElement('div');
+    card.className = 'card ride';
+    card.innerHTML = `
+      <div class="row"><h3>${escapeHtml(ride.name)}</h3><span class="spacer"></span><span class="when">${date.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} ${date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</span></div>
+      <div class="meta"><span><b>${formatDuration(s.duration)}</b></span><span>Avg <b>${s.avgPower} W</b></span><span>NP <b>${s.normalizedPower} W</b></span><span><b>${s.kj}</b> kJ</span><span>HR <b>${s.avgHr ?? '—'}</b></span></div>
+      <div class="row">
+        <button class="btn small primary" data-action="garmin">Garmin</button>
+        <button class="btn small" data-action="fit">.FIT</button>
+        ${ride.test ? '<button class="btn small" data-action="open">Result</button>' : ''}
+        <span class="spacer"></span>
+        <button class="btn small ghost danger" data-action="delete">Delete</button>
+      </div>`;
+    card.querySelector('[data-action=garmin]').addEventListener('click', () => actions.onUploadGarmin(ride));
+    card.querySelector('[data-action=fit]').addEventListener('click', () => actions.onDownloadFit(ride));
+    card.querySelector('[data-action=open]')?.addEventListener('click', () => actions.onOpenRide(ride));
+    card.querySelector('[data-action=delete]').addEventListener('click', () => showDialog({
       title: 'Delete ride?',
       text: 'The recording will be removed from this device. Download the .FIT first if you want to keep it.',
       actions: [{ label: 'Cancel', style: 'ghost' }, { label: 'Delete', style: 'danger', onClick: () => actions.onDeleteRide(ride) }],
     }));
-    return tr;
+    return card;
   }
 
   /** @param {{workouts:object[], rides:object[], settings:{ftp:number, smooth:number}}} state */
@@ -135,8 +151,8 @@ export function createLibraryView(actions, { rideScreens }) {
     const last = state.settings.ftpHistory?.at(-1);
     $('#ftp-current').textContent = `Current FTP ${state.settings.ftp} W${last ? ` · set ${new Date(last.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })} from ${methodName(last.method)}` : ''}`;
 
-    rideList.replaceChildren(...state.rides.slice().reverse().map(rideRow));
-    if (!state.rides.length) rideList.innerHTML = '<tr><td colspan="8" class="empty">No rides yet. Finished workouts appear here.</td></tr>';
+    rideList.replaceChildren(...state.rides.slice().reverse().map(rideCard));
+    if (!state.rides.length) rideList.innerHTML = '<div class="empty card">No rides yet. Finished workouts appear here.</div>';
 
     ftpInput.value = state.settings.ftp;
     smoothSelect.value = String(state.settings.smooth);
@@ -180,6 +196,7 @@ export function createLibraryView(actions, { rideScreens }) {
   return {
     root,
     render,
+    showTab,
     showHistoryResult,
     hideHistoryResult,
     redraw: () => lastState && render(lastState),

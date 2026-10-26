@@ -37,6 +37,10 @@ Run `npm run lint && npm test` before every commit. CI runs both; Pages deploys 
 - Zwift Click: unofficial protocol (as used by BikeControl/SwiftControl). Service `00000001-19ca-4651-86e5-fa29dcdd09d1`, write `RideOn` to `…0003`, notifications on `…0002`. Message 0x37 is the Click keypad (field 1 plus, field 2 minus, 0 = pressed); 0x23 is the Ride keypad bitmap.
 - Garmin Connect and TrainingPeaks have no upload API for personal apps (partner programs plus a server). Uploading means saving the `.FIT` and opening `https://connect.garmin.com/modern/import-data`. Don't build anything that asks for the user's Garmin password.
 
+## Layout rule
+
+Every page must fit a phone screen without scrolling where the content allows (reference sizes: 412×780 portrait, 851×393 landscape, 360×740 for the smallest phones). The home page is tabbed (Workouts, FTP test, Rides, Settings) for that reason; the ride screens have a landscape-phone layout under `@media (max-height:500px) and (orientation:landscape)`. Lists that grow (many workouts, many rides) and the workout editor may scroll. Check with headless Chromium at those sizes: `document.documentElement.scrollHeight` should equal `innerHeight` and no element may extend past `innerWidth`.
+
 ## Testing limits
 
 The cloud sandbox has no Bluetooth hardware. Verify UI changes in headless Chromium (`/opt/pw-browsers/chromium`) against `npm start`, using demo mode and `page.clock` to fast-forward rides. Tell the user clearly which behaviour still needs a real ride to confirm.

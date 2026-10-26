@@ -33,3 +33,20 @@
   .ride-avatar .scene{min-height:320px}
   .ride-avatar .hud.power b,.ride-avatar .hud.target b{font-size:clamp(64px,9vw,120px)}
 }
+/* Landscape phone: a shorter scene and compact rows so nothing scrolls. */
+@media (max-height:500px) and (orientation:landscape){
+  .ride-avatar .rtop{padding-block:4px}
+  .ride-avatar .scene{min-height:150px}
+  .ride-avatar .hud{padding:4px 10px}
+  .ride-avatar .hud.power b,.ride-avatar .hud.target b{font-size:clamp(28px,11vh,56px)}
+  .ride-avatar .hud.gear b{font-size:clamp(22px,8vh,36px)}
+  .ride-avatar .hud.minis b{font-size:clamp(16px,6vh,24px)}
+  .ride-avatar .interval{margin-top:6px;padding:4px 12px}
+  .ride-avatar .interval .clock{font-size:clamp(24px,9vh,40px)}
+  .ride-avatar .interval .what strong{font-size:16px}
+  .ride-avatar .interval .next{font-size:12px}
+  .ride-avatar .moderow{padding-top:6px}
+  .ride-avatar .moderow .seg button{padding:5px 8px;font-size:12px}
+  .ride-avatar .controls{padding-block:6px 8px;gap:8px}
+  .ride-avatar .controls .btn{padding:8px 6px;font-size:14px}
+}

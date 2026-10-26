@@ -31,28 +31,36 @@
     <button class="btn small primary" id="recover-save">Save ride</button>
     <button class="btn small ghost" id="recover-discard">Discard</button></div>
 
-  <section>
+  <nav class="tabs" id="tabs" aria-label="Sections">
+    <button data-tab="workouts" aria-selected="true">Workouts</button>
+    <button data-tab="tests" aria-selected="false">FTP test</button>
+    <button data-tab="rides" aria-selected="false">Rides</button>
+    <button data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+
+  <section data-panel="workouts">
     <div class="section-head">
       <h2>Workouts</h2>
-      <label class="btn" for="zwo-input">Import .zwo</label>
+      <label class="btn small" for="zwo-input">Import .zwo</label>
       <input type="file" id="zwo-input" accept=".zwo,.xml,application/xml,text/xml" multiple hidden>
-      <button class="btn primary" id="new-workout">New workout</button>
+      <button class="btn small primary" id="new-workout">New workout</button>
     </div>
     <div class="grid" id="workout-list"></div>
   </section>
 
-  <section>
+  <section data-panel="tests" hidden>
     <div class="section-head"><h2>FTP test</h2><span class="foot" id="ftp-current"></span></div>
     <div class="grid" id="test-list"></div>
     <div class="result" id="history-result" hidden style="margin-top:12px"></div>
   </section>
 
-  <section>
-    <div class="section-head"><h2>Rides</h2><span class="foot"><b>Garmin</b> saves the .FIT and opens Garmin Connect’s import page. With TrainingPeaks and Strava linked to Garmin Connect, rides reach them automatically.</span></div>
-    <div class="scroll"><table class="hist"><thead><tr><th>Ride</th><th>Date</th><th>Time</th><th>Avg</th><th>NP</th><th>kJ</th><th>HR</th><th></th></tr></thead><tbody id="ride-list"></tbody></table></div>
+  <section data-panel="rides" hidden>
+    <div class="section-head"><h2>Rides</h2></div>
+    <div class="grid rides" id="ride-list"></div>
+    <p class="foot"><b>Garmin</b> saves the .FIT and opens Garmin Connect’s import page. With TrainingPeaks and Strava linked to Garmin Connect, rides reach them automatically.</p>
   </section>
 
-  <section>
+  <section data-panel="settings" hidden>
     <div class="section-head"><h2>Settings</h2></div>
     <div class="settings">
       <label class="field"><span class="label">FTP (watts)</span><input type="number" id="set-ftp" min="50" max="600" step="1" inputmode="numeric"><span class="hint" id="ftp-hint">Workout targets are a percentage of this number.</span></label>
@@ -62,8 +70,8 @@
       <label class="field"><span class="label">Power display</span><select id="set-smooth"><option value="1">Instant (1 s)</option><option value="3">3 s average</option><option value="5">5 s average</option></select><span class="hint">Only changes what you see. The file always records every second.</span></label>
       <div class="field"><span class="label">Click test</span><div class="clicktest"><div class="key" id="key-minus">−</div><div class="key" id="key-plus">+</div></div><span class="hint" id="click-hint">Connect your Click and press a button. On the Dashboard screen, + and − change intensity by 5% (or the target by 5 W during an FTP test effort). On the Avatar screen they shift virtual gears.</span></div>
     </div>
+    <p class="foot">Workouts, settings and rides are stored in this browser on this device. Erg Room controls the trainer with the standard Bluetooth FTMS protocol.</p>
   </section>
-  <p class="foot">Workouts, settings and rides are stored in this browser on this device. Erg Room controls the trainer with the standard Bluetooth FTMS protocol.</p>
 </main>
 
 <main class="wrap" id="view-builder" hidden>
@@ -90,7 +98,7 @@
 
 <main class="wrap" id="view-summary" hidden>
   <div class="section-head"><h2 id="s-title">Ride saved</h2>
-    <button class="btn primary" id="s-garmin">Upload to Garmin</button><button class="btn" id="s-fit">Download .FIT</button><button class="btn ghost" id="s-back">Back to workouts</button></div>
+    <button class="btn primary" id="s-garmin">Upload to Garmin</button><button class="btn" id="s-fit">Download .FIT</button><button class="btn ghost" id="s-back">Back</button></div>
   <div class="result" id="s-result" hidden></div>
   <div class="sumchart"><canvas id="s-canvas"></canvas></div>
   <div class="sumgrid" id="s-stats" style="margin-top:12px"></div>

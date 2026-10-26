@@ -52,7 +52,7 @@ Web Bluetooth only works on `https://` pages, which is why the app is hosted on 
 3. Press **Ride** on a workout. Start pedalling and the clock starts.
 4. Tap **Finish → Finish & save**, then **Download .FIT**.
 
-On Android, use Chrome's menu → **Add to Home screen** to launch it like an app.
+On Android, use Chrome's menu → **Add to Home screen** to launch it like an app. The home page is split into Workouts, FTP test, Rides and Settings tabs so each fits a phone screen; the ride screens work in portrait and landscape.
 
 ## Notes
 
