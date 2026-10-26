@@ -5,6 +5,7 @@
  */
 import { zoneOf, totalDuration } from '../workout/model.js';
 import { cssColor, prepareCanvas } from './canvas.js';
+import { hrZoneOf } from '../ride/hr-zones.js';
 
 /** Headroom above the highest bar. */
 const HEADROOM = 1.06;
@@ -14,18 +15,26 @@ const MIN_SCALE = 1.25;
 const FREE_RIDE_HEIGHT = 0.5;
 /** Ramps are drawn as slices this many pixels wide so each slice gets its own zone colour. */
 const RAMP_SLICE_PX = 3;
+/** The heart-rate line spans this range of the threshold heart rate, bottom to top of the chart. */
+const HR_SCALE = [0.5, 1.12];
+/** Without a threshold heart rate, the line is scaled between these bpm. */
+const HR_SCALE_FALLBACK_BPM = [80, 200];
+/** Width of the heart-rate line and of its zone-coloured pieces. */
+const HR_LINE_WIDTH = 2.2;
 
 /**
  * @param {HTMLCanvasElement} canvas
  * @param {import('../workout/model.js').Segment[]} segments
- * @param {{progress?:number, trace?:number[], ftp?:number, intensity?:number, labels?:boolean}} [options]
- *   progress: workout seconds completed; trace: watts by workout second; intensity scales targets
+ * @param {{progress?:number, trace?:number[], ftp?:number, intensity?:number, labels?:boolean,
+ *   hrTrace?:(number|null)[], hrReference?:number|null}} [options]
+ *   progress: workout seconds completed; trace: watts by workout second; intensity scales targets;
+ *   hrTrace: bpm by workout second, drawn on its own scale and coloured by heart-rate zone when hrReference (LTHR) is known
  */
 export function drawProfile(canvas, segments, options = {}) {
   const prepared = prepareCanvas(canvas);
   if (!prepared) return;
   const { ctx, w, h } = prepared;
-  const { progress, trace, ftp, intensity = 1, labels = false } = options;
+  const { progress, trace, ftp, intensity = 1, labels = false, hrTrace, hrReference } = options;
 
   const total = Math.max(1, totalDuration(segments));
   let maxF = MIN_SCALE;
@@ -117,8 +126,47 @@ export function drawProfile(canvas, segments, options = {}) {
     ctx.stroke();
   }
 
+  if (hrTrace?.length) drawHeartRate(ctx, hrTrace, { hrReference, X, h, w, zones, muted, bg });
+
   if (progress != null) {
     ctx.fillStyle = fg;
     ctx.fillRect(X(Math.min(progress, total)) - 1, 0, 2, h);
   }
+}
+
+/**
+ * Heart rate by workout second as a line on its own vertical scale. Each piece
+ * takes the colour of its heart-rate zone (muted without a reference); a halo in
+ * the background colour keeps it visible over bars of the same colour.
+ */
+function drawHeartRate(ctx, hrTrace, { hrReference, X, h, w, zones, muted, bg }) {
+  const [low, high] = hrReference ? [hrReference * HR_SCALE[0], hrReference * HR_SCALE[1]] : HR_SCALE_FALLBACK_BPM;
+  const Y = (bpm) => h - 2 - ((Math.min(high, Math.max(low, bpm)) - low) / (high - low)) * (h - 4);
+  const step = Math.max(1, Math.floor(hrTrace.length / (w * 1.5)));
+  const pieces = [];
+  let previous = null;
+  for (let i = 0; i < hrTrace.length; i += step) {
+    const bpm = hrTrace[i];
+    if (!bpm) { previous = null; continue; }
+    const point = { x: X(i + 0.5), y: Y(bpm) };
+    if (previous) pieces.push({ from: previous, to: point, zone: hrZoneOf(bpm, hrReference) });
+    previous = point;
+  }
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = bg;
+  ctx.lineWidth = HR_LINE_WIDTH + 2;
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  for (const { from, to } of pieces) { ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y); }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = HR_LINE_WIDTH;
+  for (const { from, to, zone } of pieces) {
+    ctx.strokeStyle = zone ? zones[zone] : muted;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
 }

@@ -38,13 +38,15 @@ const MAX_FRAME_S = 2;
 
 export class RideSession {
   /**
-   * @param {{workout:import('../workout/model.js').Workout & {test?:{protocol:string}}, ftp:number, demo?:boolean, startedAt:number}} options
+   * @param {{workout:import('../workout/model.js').Workout & {test?:{protocol:string}}, ftp:number, hrReference?:number|null, demo?:boolean, startedAt:number}} options
    *   startedAt is a wall-clock time in ms (Date.now()). `workout.test` marks an FTP test.
+   *   hrReference is the threshold heart rate used to colour heart-rate zones (null when unknown).
    */
-  constructor({ workout, ftp, demo = false, startedAt }) {
+  constructor({ workout, ftp, hrReference = null, demo = false, startedAt }) {
     this.id = createId();
     this.name = workout.name;
     this.ftp = ftp;
+    this.hrReference = hrReference;
     this.demo = demo;
     this.test = workout.test ?? null;
     this.start = startedAt;
@@ -64,6 +66,8 @@ export class RideSession {
     this.work = 0;
     /** Watts by whole second of workout time, for drawing over the profile. */
     this.trace = [];
+    /** Heart rate (bpm or null) by whole second of workout time. */
+    this.hrTrace = [];
     /** @type {Samples} */
     this.samples = { t: [], p: [], c: [], h: [], s: [], d: [], g: [] };
     /** Watts added to each test effort's target by +/− presses, by segment index. */
@@ -171,7 +175,11 @@ export class RideSession {
       acc.sum += power;
       acc.n++;
     }
-    if (this.pedalling) this.trace[Math.floor(this.workoutTime)] = power;
+    if (this.pedalling) {
+      const workoutSecond = Math.floor(this.workoutTime);
+      this.trace[workoutSecond] = power;
+      this.hrTrace[workoutSecond] = reading.hr ?? null;
+    }
   }
 
   /** True once, right after the last step finishes. */
@@ -262,8 +270,8 @@ export class RideSession {
     return true;
   }
 
-  /** Plain object for storage and FIT export. */
+  /** Plain object for storage and FIT export. hrTrace and hrReference are absent from rides saved before they existed. */
   toRecord() {
-    return { id: this.id, name: this.name, start: this.start, ftp: this.ftp, test: this.test, segments: this.segments, samples: this.samples, trace: this.trace };
+    return { id: this.id, name: this.name, start: this.start, ftp: this.ftp, hrReference: this.hrReference, test: this.test, segments: this.segments, samples: this.samples, trace: this.trace, hrTrace: this.hrTrace };
   }
 }

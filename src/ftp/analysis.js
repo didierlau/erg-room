@@ -8,6 +8,8 @@
  *   { ok:false, error:string }   (the message is shown to the rider)
  */
 
+import { LTHR_FROM_MAX } from '../ride/hr-zones.js';
+
 /** FTP as a fraction of best 1-minute power in a ramp test. */
 export const RAMP_FACTOR = 0.75;
 /** FTP as a fraction of 20-minute power. */
@@ -16,8 +18,6 @@ export const TWENTY_FACTOR = 0.95;
 export const TWENTY_LTHR_FACTOR = 0.95;
 /** FTP as a fraction of Critical Power. CP sits slightly above FTP/MLSS for most riders. */
 export const CP_TO_FTP = 0.95;
-/** LTHR assumed as a fraction of max HR when only max HR is known. */
-export const LTHR_FROM_MAX = 0.9;
 /** Heart rate is averaged over the end of each submaximal stage, once it has settled. */
 export const STAGE_SETTLED_SECONDS = 120;
 /** An effort counts only if at least this share of it was recorded. */

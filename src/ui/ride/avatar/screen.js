@@ -10,6 +10,7 @@ import { zoneOf } from '../../../workout/model.js';
 import { buildTerrain } from '../../../ride/terrain.js';
 import { GEAR_COUNT } from '../../../ride/gears.js';
 import { describeNext, describeState, describeStep, nudgeStepLabel } from '../../../ride/describe.js';
+import { hrZoneOf } from '../../../ride/hr-zones.js';
 
 /** With reduced motion, the scene is only drawn on the 4 Hz ride frames. */
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -141,6 +142,8 @@ export function createAvatarScreen(actions) {
     el.grade.textContent = `${grade > 0 ? '+' : ''}${grade.toFixed(1)}%${gears ? ' to trainer' : ''}`;
     el.cad.textContent = reading.fresh && reading.cadence ? Math.round(reading.cadence) : '—';
     el.hr.textContent = reading.hr ?? '—';
+    const hrZone = hrZoneOf(reading.hr, s.hrReference);
+    el.hr.style.color = hrZone ? `var(--z${hrZone})` : '';
     el.spd.textContent = reading.fresh && reading.cadence ? s.gears.speedKmh(reading.cadence).toFixed(1) : '—';
 
     el.clock.textContent = position ? formatDuration(Math.ceil(position.left)) : '0:00';

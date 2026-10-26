@@ -101,3 +101,17 @@ test('samples carry step index, distance and trace', () => {
   assert.equal(record.name, 'Test');
   assert.equal(record.samples, S);
 });
+
+test('heart rate is traced by workout second and the HR reference is kept in the record', () => {
+  const clock = { now: 0, wall: 1_000_000 };
+  const session = new RideSession({ workout: WORKOUT, ftp: 200, hrReference: 165, startedAt: clock.wall });
+  session.update({ now: clock.now, wall: clock.wall, reading: pedal });
+  ride(session, 5, { ...pedal, hr: 140 }, clock);
+  ride(session, 3, { ...pedal, hr: null }, clock);
+  assert.equal(session.hrTrace[2], 140);
+  assert.equal(session.hrTrace[7], null, 'a missing strap reading is kept as null, not skipped');
+  assert.equal(session.hrTrace.length, session.trace.length);
+  const record = session.toRecord();
+  assert.equal(record.hrReference, 165);
+  assert.deepEqual(record.hrTrace, session.hrTrace);
+});

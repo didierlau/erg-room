@@ -6,7 +6,7 @@ Structured ERG workouts for a **Zwift Hub** and **Zwift Click**, in the browser.
 
 ## Features
 
-- **ERG workouts.** The trainer holds each target wattage; ramps change smoothly. You see power against target, the interval countdown, what's next, cadence, heart rate and the workout profile with your actual power traced over it.
+- **ERG workouts.** The trainer holds each target wattage; ramps change smoothly. You see power against target, the interval countdown, what's next, cadence, heart rate and the workout profile with your actual power and heart rate traced over it. The heart-rate line is coloured by zone (from your threshold heart rate, or 90% of max HR) using the same colours as the power zones.
 - **Zwift Click.** On the Dashboard screen `+` / `−` change the whole workout's intensity by 5%. In free-ride steps, ERG turns off and the Click changes the simulated gradient. On a laptop the arrow keys do the same; space pauses.
 - **Two ride screens** (Settings → Ride screen). *Dashboard*: big numbers and the workout profile. *Avatar*: a rider on a road that climbs with the target power; the Click shifts 13 virtual gears. A toggle on that screen picks what the trainer does: **ERG holds target** (gears only change the virtual speed) or **Gears set resistance** (the trainer runs in simulation mode; the road's gradient plus your gear sets the resistance and you pace yourself to the target, like riding outside). Since the Zwift Cog has no real gears and FTMS has no shift command, a gear is emulated as ±0.5% of gradient per step.
 - **Workouts.** Import Zwift `.zwo` files (several at once) or build your own with steady, ramp, interval and free-ride steps, in % of FTP or watts, with estimated duration, TSS and IF. Any workout exports back to `.zwo`.

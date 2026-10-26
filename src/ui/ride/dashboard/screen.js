@@ -8,6 +8,7 @@ import { drawProfile } from '../../profile-chart.js';
 import { formatDuration } from '../../../core/format.js';
 import { zoneOf } from '../../../workout/model.js';
 import { describeNext, describeState, describeStep, nudgeStepLabel } from '../../../ride/describe.js';
+import { hrZoneOf } from '../../../ride/hr-zones.js';
 
 /** The profile chart is redrawn at most this often (ms); numbers update every frame. */
 const CHART_REDRAW_MS = 900;
@@ -89,6 +90,8 @@ export function createDashboardScreen(actions) {
     el.next.textContent = describeNext(s, position);
     el.cad.textContent = reading.fresh && reading.cadence ? Math.round(reading.cadence) : '—';
     el.hr.textContent = reading.hr ?? '—';
+    const hrZone = hrZoneOf(reading.hr, s.hrReference);
+    el.hr.style.color = hrZone ? `var(--z${hrZone})` : '';
     el.int.textContent = `${Math.round(s.intensity * 100)}%`;
     el.kj.textContent = `${Math.round(s.work / 1000)} kJ`;
     el.elapsed.textContent = formatDuration(s.elapsedSeconds());
@@ -108,7 +111,7 @@ export function createDashboardScreen(actions) {
 
     if (now - lastChart > CHART_REDRAW_MS) {
       lastChart = now;
-      drawProfile(el.canvas, s.segments, { progress: s.workoutTime, trace: s.trace, ftp: s.ftp, intensity: s.intensity });
+      drawProfile(el.canvas, s.segments, { progress: s.workoutTime, trace: s.trace, ftp: s.ftp, intensity: s.intensity, hrTrace: s.hrTrace, hrReference: s.hrReference });
     }
   }
 

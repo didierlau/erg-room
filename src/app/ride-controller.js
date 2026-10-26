@@ -7,6 +7,7 @@ import { DemoRider } from '../ride/demo-rider.js';
 import { rideStats } from '../ride/stats.js';
 import { RampFailureDetector } from '../ftp/ramp-failure.js';
 import { describeNudge, describeResistance } from '../ride/describe.js';
+import { hrReference } from '../ride/hr-zones.js';
 
 /** Frame loop interval (ms). */
 const FRAME_MS = 250;
@@ -85,7 +86,8 @@ export function createRideController({ trainer, live, repository, getScreen, wak
   }
 
   function start(workout, { demo: isDemo }) {
-    session = new RideSession({ workout, ftp: getSettings().ftp, demo: isDemo, startedAt: Date.now() });
+    const settings = getSettings();
+    session = new RideSession({ workout, ftp: settings.ftp, hrReference: hrReference(settings), demo: isDemo, startedAt: Date.now() });
     demo = isDemo ? new DemoRider() : null;
     rampDetector = session.test?.protocol === 'ramp' ? new RampFailureDetector() : null;
     lastFrame = performance.now();

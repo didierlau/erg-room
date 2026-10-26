@@ -20,7 +20,7 @@ export function createSummaryView({ onDownloadFit, onUploadGarmin, onBack, rende
   $('#s-garmin').addEventListener('click', () => ride && onUploadGarmin(ride));
   $('#s-back').addEventListener('click', () => onBack());
 
-  const draw = () => ride && drawProfile($('#s-canvas'), ride.segments, { trace: ride.trace || [], ftp: ride.ftp, labels: true });
+  const draw = () => ride && drawProfile($('#s-canvas'), ride.segments, { trace: ride.trace || [], ftp: ride.ftp, labels: true, hrTrace: ride.hrTrace, hrReference: ride.hrReference });
 
   return {
     root,
