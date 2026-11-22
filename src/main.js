@@ -64,6 +64,14 @@ async function importFiles(files) {
   else if (workouts.length) toast(importSummary(workouts.length));
 }
 
+/** Keep a generated quick workout in the library. */
+function saveGenerated(workout) {
+  state.workouts.unshift(workout);
+  saveWorkouts();
+  renderLibrary();
+  toast(`“${workout.name}” saved to your workouts`);
+}
+
 function saveFromBuilder(draft, original) {
   // Editing an example keeps the example and saves a personal copy.
   if (original && !original.example) state.workouts[state.workouts.indexOf(original)] = draft;
@@ -153,6 +161,7 @@ function startRide(workout) {
 /* ---------- views ---------- */
 const library = createLibraryView({
   onRide: startRide,
+  onSaveGenerated: saveGenerated,
   onEdit: (w) => { builder.open(w); show('builder'); },
   onNew: () => { builder.open(null); show('builder'); },
   onExportZwo: downloadZwo,

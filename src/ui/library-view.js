@@ -8,10 +8,11 @@ import { escapeHtml, formatDuration } from '../core/format.js';
 import { flatten, workoutStats } from '../workout/model.js';
 import { PROTOCOLS, buildTestWorkout } from '../ftp/protocols.js';
 import { methodName } from './ftp-result.js';
+import { createQuickWorkoutCard } from './quick-workout-card.js';
 
 /**
  * @param {{
- *   onRide:(w) => void, onEdit:(w) => void, onNew:() => void, onExportZwo:(w) => void, onDeleteWorkout:(w) => void,
+ *   onRide:(w) => void, onSaveGenerated:(w) => void, onEdit:(w) => void, onNew:() => void, onExportZwo:(w) => void, onDeleteWorkout:(w) => void,
  *   onImportFiles:(files:File[]) => void, onDownloadFit:(ride) => void, onUploadGarmin:(ride) => void, onDeleteRide:(ride) => void,
  *   onOpenRide:(ride) => void, onStartTest:(protocolId:string) => void, onEstimateFromRides:() => void,
  *   onSettingsChange:(patch:object) => void,
@@ -30,6 +31,7 @@ export function createLibraryView(actions, { rideScreens }) {
   const screenSelect = $('#set-screen');
   const tabs = [...root.querySelectorAll('#tabs [data-tab]')];
   let lastState = null;
+  const quick = createQuickWorkoutCard({ onRide: (w) => actions.onRide(w), onSave: (w) => actions.onSaveGenerated(w) });
 
   /** Show one section at a time so each fits a phone screen. */
   function showTab(name) {
@@ -141,8 +143,9 @@ export function createLibraryView(actions, { rideScreens }) {
   function render(state) {
     lastState = state;
     const cards = state.workouts.map((w) => workoutCard(w, state.settings.ftp));
-    workoutList.replaceChildren(...cards.map((c) => c.card));
-    if (!cards.length) workoutList.innerHTML = '<div class="empty card">No workouts yet. Import a .zwo file or build one.</div>';
+    workoutList.replaceChildren(quick.card, ...cards.map((c) => c.card));
+    if (!cards.length) workoutList.insertAdjacentHTML('beforeend', '<div class="empty card">No saved workouts yet. Generate one above, import a .zwo file or build one.</div>');
+    quick.update(state.settings.ftp);
     requestAnimationFrame(() => cards.forEach(({ card, segments }) => drawProfile(card.querySelector('canvas'), segments)));
 
     const tests = PROTOCOLS.map((p) => testCard(p, state.settings.ftp));
