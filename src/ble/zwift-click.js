@@ -13,6 +13,7 @@
  *         'button' detail {button, down} on every change. Plus the BleDevice events.
  */
 import { BleDevice } from './ble-device.js';
+import { BATTERY_SERVICE } from './battery.js';
 
 const SERVICE = '00000001-19ca-4651-86e5-fa29dcdd09d1';
 const SERVICE_V2 = '0000fc82-0000-1000-8000-00805f9b34fb';
@@ -108,8 +109,9 @@ export class ZwiftClick extends BleDevice {
       label: 'Click',
       requestOptions: {
         filters: [{ namePrefix: 'Zwift Click' }, { namePrefix: 'Zwift Ride' }, { namePrefix: 'Zwift Play' }, { manufacturerData: [{ companyIdentifier: ZWIFT_COMPANY_ID }] }],
-        optionalServices: [SERVICE, SERVICE_V2, 'battery_service'],
+        optionalServices: [SERVICE, SERVICE_V2, BATTERY_SERVICE],
       },
+      battery: true,
     });
     this._tracker = new ButtonTracker();
   }

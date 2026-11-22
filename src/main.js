@@ -4,6 +4,7 @@
  */
 import { createStorage } from './core/storage.js';
 import { createId } from './core/format.js';
+import { formatChipHeartRate } from './core/device-status.js';
 import { createRepository } from './data/repository.js';
 import { validateSettingsPatch, withFtpResult } from './data/settings.js';
 import { importSummary, importWorkoutFiles } from './workout/import.js';
@@ -249,11 +250,14 @@ if (!support.ok) library.showBluetoothWarning(support.reason);
 const onUnsupported = () => library.showBluetoothWarning(bluetoothSupport().reason ?? 'unsupported');
 bindDeviceChip($('#chip-trainer'), trainer, { onUnsupported });
 bindDeviceChip($('#chip-click'), click, { onUnsupported });
-bindDeviceChip($('#chip-hr'), heartRate, { onUnsupported });
+const hrChip = bindDeviceChip($('#chip-hr'), heartRate, { onUnsupported });
 
 trainer.addEventListener('data', (e) => live.updateTrainer(e.detail, performance.now()));
 trainer.addEventListener('lost', () => live.clearTrainer());
-heartRate.addEventListener('hr', (e) => live.updateHeartRate(e.detail.bpm, performance.now()));
+heartRate.addEventListener('hr', (e) => {
+  live.updateHeartRate(e.detail.bpm, performance.now());
+  hrChip.setReading(formatChipHeartRate(e.detail.bpm));
+});
 heartRate.addEventListener('lost', () => live.updateHeartRate(null, performance.now()));
 click.addEventListener('button', (e) => library.showButton(e.detail.button, e.detail.down));
 click.addEventListener('press', (e) => rides.active && rides.press(e.detail.button === 'plus' ? 1 : -1));
