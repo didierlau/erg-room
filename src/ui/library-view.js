@@ -144,8 +144,8 @@ export function createLibraryView(actions, { rideScreens }) {
     lastState = state;
     const cards = state.workouts.map((w) => workoutCard(w, state.settings.ftp));
     workoutList.replaceChildren(quick.card, ...cards.map((c) => c.card));
-    if (!cards.length) workoutList.insertAdjacentHTML('beforeend', '<div class="empty card">No saved workouts yet. Generate one above, import a .zwo file or build one.</div>');
-    quick.update(state.settings.ftp);
+    if (!cards.length) workoutList.insertAdjacentHTML('beforeend', '<div class="empty card">No saved workouts yet. Save today’s ride above, import a .zwo file or build one.</div>');
+    quick.update(state.settings.ftp, state.rides);
     requestAnimationFrame(() => cards.forEach(({ card, segments }) => drawProfile(card.querySelector('canvas'), segments)));
 
     const tests = PROTOCOLS.map((p) => testCard(p, state.settings.ftp));

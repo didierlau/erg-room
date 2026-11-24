@@ -78,7 +78,8 @@ main.wrap{padding-block:16px 48px;display:grid;gap:20px;align-content:start}
 .desc{font-size:13px;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 .card.quick{border-color:color-mix(in srgb,var(--z4) 45%,var(--line))}
-.qpick{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.qreason{font-size:14px;margin:0;line-height:1.35}
 .qpick select{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;width:100%;min-width:0}
 .qdesc{font-size:13px;color:var(--muted);margin:0}
 .card.ride{gap:8px}
@@ -172,6 +173,7 @@ main.wrap{padding-block:16px 48px;display:grid;gap:20px;align-content:start}
   main.wrap{padding-block:12px 24px;gap:14px}
   .card .desc{display:none}
   .qdesc{font-size:12px;line-height:1.35}
+  .qreason{font-size:13px}
   .card.test canvas{display:none}
   .card.test{gap:6px}
   .card.test .meta{font-size:12px}

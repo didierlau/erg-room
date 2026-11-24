@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizedPower, rideStats } from '../src/ride/stats.js';
+import { caloriesFromWork, normalizedPower, rideStats } from '../src/ride/stats.js';
 
 test('normalized power of constant power equals that power', () => {
   assert.ok(Math.abs(normalizedPower(new Array(600).fill(200)) - 200) < 1e-9);
@@ -33,4 +33,10 @@ test('rideStats summary', () => {
   assert.equal(s.distance, 36000);
   assert.ok(Math.abs(s.tss - 100) < 1e-6);
   assert.equal(rideStats({ ftp: 250, samples: { t: [], p: [], c: [], h: [], s: [], d: [], g: [] } }).avgPower, 0);
+});
+
+test('caloriesFromWork: about one kcal per kJ at the pedals', () => {
+  assert.equal(caloriesFromWork(600), 598);
+  assert.equal(caloriesFromWork(0), 0);
+  assert.equal(caloriesFromWork(undefined), 0);
 });

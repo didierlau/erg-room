@@ -5,6 +5,7 @@
 import { $ } from './dom.js';
 import { drawProfile } from './profile-chart.js';
 import { formatDuration } from '../core/format.js';
+import { caloriesFromWork } from '../ride/stats.js';
 
 /**
  * @param {{
@@ -36,7 +37,7 @@ export function createSummaryView({ onDownloadFit, onUploadGarmin, onBack, rende
 
       const items = [
         ['Time', formatDuration(s.duration)], ['Avg power', `${s.avgPower} W`], ['Normalized', `${s.normalizedPower} W`],
-        ['Max power', `${s.maxPower} W`], ['Work', `${s.kj} kJ`], ['TSS', Math.round(s.tss)], ['IF', s.intensity.toFixed(2)],
+        ['Max power', `${s.maxPower} W`], ['Work', `${s.kj} kJ`], ['Calories', `${caloriesFromWork(s.kj)} kcal`], ['TSS', Math.round(s.tss)], ['IF', s.intensity.toFixed(2)],
         ['Avg cadence', s.avgCadence ?? '—'], ['Avg HR', s.avgHr ?? '—'], ['Distance', `${(s.distance / 1000).toFixed(1)} km`],
       ];
       $('#s-stats').innerHTML = items.map(([label, value]) => `<div class="stat"><span class="label">${label}</span><b>${value}</b></div>`).join('');

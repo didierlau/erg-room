@@ -9,8 +9,9 @@ Structured ERG workouts for a **Zwift Hub** and **Zwift Click**, in the browser.
 - **ERG workouts.** The trainer holds each target wattage; ramps change smoothly. You see power against target, the interval countdown, what's next, cadence, heart rate and the workout profile with your actual power and heart rate traced over it. The heart-rate line is coloured by zone (from your threshold heart rate, or 90% of max HR) using the same colours as the power zones.
 - **Zwift Click.** On the Dashboard screen `+` / `−` change the whole workout's intensity by 5%. In free-ride steps, ERG turns off and the Click changes the simulated gradient. On a laptop the arrow keys do the same; space pauses.
 - **Two ride screens** (Settings → Ride screen). *Dashboard*: big numbers and the workout profile. *Avatar*: a rider on a road that climbs with the target power; the Click shifts 13 virtual gears. A toggle on that screen picks what the trainer does: **ERG holds target** (gears only change the virtual speed) or **Gears set resistance** (the trainer runs in simulation mode; the road's gradient plus your gear sets the resistance and you pace yourself to the target, like riding outside). Since the Zwift Cog has no real gears and FTMS has no shift command, a gear is emulated as ±0.5% of gradient per step.
+- **Today’s ride.** Pick how long you have and how your legs feel; Erg Room suggests an intensity, says why, and builds a workout that fills the time exactly. It works around your schedule rather than a calendar: mostly steady riding, at most two hard sessions in any 7 days and never two days running, easy rides after a break or several days in a row, and nothing piles up when you skip days. How hard past rides were is read from their power, using the rides saved on this device. You can always pick another intensity yourself.
 - **Workouts.** Import Zwift `.zwo` files (several at once) or build your own with steady, ramp, interval and free-ride steps, in % of FTP or watts, with estimated duration, TSS and IF. Any workout exports back to `.zwo`.
-- **Recording.** One sample per second, one lap per workout step. Download the `.FIT` (indoor cycling) and upload it to Strava, Garmin Connect, intervals.icu or TrainingPeaks.
+- **Recording.** One sample per second, one lap per workout step. The summary shows calories burned, estimated from the work measured at the pedals. Download the `.FIT` (indoor cycling) and upload it to Strava, Garmin Connect, intervals.icu or TrainingPeaks.
 - **Safety nets.** The workout clock pauses when you stop pedalling, the screen stays awake, devices reconnect after a dropout, and an unfinished ride is saved every 10 seconds.
 - **Heart rate** from any Bluetooth strap (optional) and a **demo mode** to try it without a trainer.
 - **FTP tests** with automatic analysis and a one-tap “Set FTP”. Details below.
@@ -90,6 +91,8 @@ src/
     ramp-failure.js     detects the end of a ramp test
   workout/
     model.js            workout blocks, flattening into segments, zones, TSS/IF estimates
+    generator.js        builds a workout of a given length and intensity
+    recommend.js        suggests today's intensity from past rides, time available and how the legs feel
     zwo.js              Zwift .zwo import and export
   ride/
     engine.js           RideSession: workout clock, ERG targets, Click nudges, 1 Hz recording

@@ -5,6 +5,15 @@
 /** Rolling window for Normalized Power, in samples (seconds). */
 const NP_WINDOW = 30;
 
+/**
+ * Food calories per kilojoule of work at the pedals. The body is about 24% efficient and
+ * 1 kcal is 4.184 kJ, so the two numbers come out almost the same.
+ */
+const KCAL_PER_KJ = 1 / (0.24 * 4.184);
+
+/** Estimated calories burned (kcal) for work done at the pedals (kJ), from measured power. */
+export const caloriesFromWork = (kj) => Math.round((kj || 0) * KCAL_PER_KJ);
+
 const mean = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);
 
 /**
