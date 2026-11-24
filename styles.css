@@ -78,9 +78,11 @@ main.wrap{padding-block:16px 48px;display:grid;gap:20px;align-content:start}
 .desc{font-size:13px;color:var(--muted);margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 .card.quick{border-color:color-mix(in srgb,var(--z4) 45%,var(--line))}
-.qpick{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (min-width:640px){.card.quick{grid-column:span 2}}
+.qpick{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1.3fr);gap:6px}
 .qreason{font-size:14px;margin:0;line-height:1.35}
-.qpick select{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 9px;width:100%;min-width:0}
+@media (max-width:380px){.qpick{grid-template-columns:1fr 1fr}.qpick .field:last-child{grid-column:span 2}}
+.qpick select{background:var(--surface2);border:1px solid var(--line);border-radius:8px;padding:8px 4px;width:100%;min-width:0;font-size:14px}
 .qdesc{font-size:13px;color:var(--muted);margin:0}
 .card.ride{gap:8px}
 .card.ride h3{font-size:17px}
